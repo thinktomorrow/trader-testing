@@ -219,7 +219,7 @@ class Catalog
 
         $product->updateProductTaxa([
             ...$product->getProductTaxa(),
-            $productTaxon
+            $productTaxon,
         ]);
 
         if ($this->persist) {
