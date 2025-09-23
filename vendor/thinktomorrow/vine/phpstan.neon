@@ -1,7 +1,0 @@
-parameters:
-    paths:
-        - src
-
-    # The level 10 is the highest level
-    level: 3
-
