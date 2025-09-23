@@ -5336,12 +5336,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/thinktomorrow/trader.git",
-                "reference": "8a287019ed3dd43323a15316135a5eb764c3a679"
+                "reference": "79dec5383b35d66175aadc7be8c627fce012e867"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thinktomorrow/trader/zipball/8a287019ed3dd43323a15316135a5eb764c3a679",
-                "reference": "8a287019ed3dd43323a15316135a5eb764c3a679",
+                "url": "https://api.github.com/repos/thinktomorrow/trader/zipball/79dec5383b35d66175aadc7be8c627fce012e867",
+                "reference": "79dec5383b35d66175aadc7be8c627fce012e867",
                 "shasum": ""
             },
             "require": {
@@ -5363,7 +5363,8 @@
                 "orchestra/testbench": "^10.3",
                 "phpstan/phpstan": "^2.1.17",
                 "phpunit/phpunit": "^11.2.7",
-                "qossmic/deptrac-shim": "^1.0.2"
+                "qossmic/deptrac-shim": "^1.0.2",
+                "thinktomorrow/trader-testing": "dev-main"
             },
             "type": "library",
             "extra": {
@@ -5400,7 +5401,7 @@
                 "issues": "https://github.com/thinktomorrow/trader/issues",
                 "source": "https://github.com/thinktomorrow/trader/tree/taxonomy"
             },
-            "time": "2025-09-21T21:20:56+00:00"
+            "time": "2025-09-23T08:18:50+00:00"
         },
         {
             "name": "thinktomorrow/vine",
