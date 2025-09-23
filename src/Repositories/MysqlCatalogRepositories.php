@@ -3,7 +3,7 @@
 namespace Thinktomorrow\Trader\Testing\Repositories;
 
 use Psr\Container\ContainerInterface;
-use Thinktomorrow\Trader\Tests\Support\CatalogRepositories;
+use Thinktomorrow\Trader\Testing\Support\CatalogRepositories;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
 use Thinktomorrow\Trader\Application\Product\Grid\FlattenedTaxonIds;
 use Thinktomorrow\Trader\Application\Product\ProductDetail\ProductDetailRepository;
