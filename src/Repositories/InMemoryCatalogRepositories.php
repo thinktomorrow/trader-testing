@@ -2,6 +2,8 @@
 
 namespace Thinktomorrow\Trader\Testing\Repositories;
 
+use Thinktomorrow\Trader\Application\Taxon\Redirect\RedirectRepository;
+use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryTaxonRedirectRepository;
 use Thinktomorrow\Trader\Testing\Support\CatalogRepositories;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
 use Thinktomorrow\Trader\Application\Product\Grid\FlattenedTaxonIds;
@@ -79,6 +81,11 @@ class InMemoryCatalogRepositories implements CatalogRepositories
     public function variantForCartRepository(): VariantForCartRepository
     {
         return new InMemoryVariantRepository();
+    }
+
+    public function taxonRedirectRepository(): RedirectRepository
+    {
+        return new InMemoryTaxonRedirectRepository();
     }
 
     public function taxonFilters(): TaxonFilters

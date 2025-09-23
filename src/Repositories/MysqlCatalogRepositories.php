@@ -3,6 +3,8 @@
 namespace Thinktomorrow\Trader\Testing\Repositories;
 
 use Psr\Container\ContainerInterface;
+use Thinktomorrow\Trader\Application\Taxon\Redirect\TaxonRedirectRepository;
+use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlTaxonRedirectRepository;
 use Thinktomorrow\Trader\Testing\Support\CatalogRepositories;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
 use Thinktomorrow\Trader\Application\Product\Grid\FlattenedTaxonIds;
@@ -68,6 +70,11 @@ class MysqlCatalogRepositories implements CatalogRepositories
     public function variantForCartRepository(): VariantForCartRepository
     {
         return new MysqlVariantRepository(new TestContainer());
+    }
+
+    public function taxonRedirectRepository(): TaxonRedirectRepository
+    {
+        return new MysqlTaxonRedirectRepository();
     }
 
     public function taxonFilters(): TaxonFilters
