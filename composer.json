@@ -1,0 +1,15 @@
+{
+  "name": "thinktomorrow/trader-testing",
+  "description": "testing library for trader projects",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "Thinktomorrow\\Trader\\Testing\\": "src/"
+    }
+  },
+  "require-dev": {
+    "php": "^8.4",
+    "phpunit/phpunit": "^11",
+    "thinktomorrow/trader" : "dev-taxonomy"
+  }
+}
