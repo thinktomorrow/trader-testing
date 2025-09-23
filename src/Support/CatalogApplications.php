@@ -5,23 +5,27 @@ namespace Thinktomorrow\Trader\Testing\Support;
 use Thinktomorrow\Trader\Application\Product\ProductApplication;
 use Thinktomorrow\Trader\Application\Taxon\TaxonApplication;
 use Thinktomorrow\Trader\Application\Taxonomy\TaxonomyApplication;
-use Thinktomorrow\Trader\Infrastructure\Test\EventDispatcherSpy;
-use Thinktomorrow\Trader\Infrastructure\Test\TestTraderConfig;
+use Thinktomorrow\Trader\Domain\Common\Event\EventDispatcher;
+use Thinktomorrow\Trader\TraderConfig;
 
 class CatalogApplications
 {
-    public readonly CatalogRepositories $repos;
+    private CatalogRepositories $repos;
+    private TraderConfig $config;
+    private EventDispatcher $eventDispatcher;
 
-    public function __construct(CatalogRepositories $repos)
+    public function __construct(CatalogRepositories $repos, TraderConfig $config, EventDispatcher $eventDispatcher)
     {
         $this->repos = $repos;
+        $this->config = $config;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     public function taxonomyApplication(): TaxonomyApplication
     {
         return new TaxonomyApplication(
-            new TestTraderConfig(),
-            new EventDispatcherSpy(),
+            $this->config,
+            $this->eventDispatcher,
             $this->repos->taxonomyRepository()
         );
     }
@@ -29,8 +33,8 @@ class CatalogApplications
     public function taxonApplication(): TaxonApplication
     {
         return new TaxonApplication(
-            new TestTraderConfig(),
-            new EventDispatcherSpy(),
+            $this->config,
+            $this->eventDispatcher,
             $this->repos->taxonRepository(),
         );
     }
@@ -38,8 +42,8 @@ class CatalogApplications
     public function productApplication(): ProductApplication
     {
         return new ProductApplication(
-            new TestTraderConfig(),
-            new EventDispatcherSpy(),
+            $this->config,
+            $this->eventDispatcher,
             $this->repos->productRepository(),
             $this->repos->variantRepository(),
             $this->repos->taxonTreeRepository(),

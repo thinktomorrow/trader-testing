@@ -7,6 +7,7 @@ use Thinktomorrow\Trader\Application\Product\Taxa\ProductTaxonItem;
 use Thinktomorrow\Trader\Application\Product\Taxa\VariantTaxonItem;
 use Thinktomorrow\Trader\Application\Taxon\Tree\TaxonNode;
 use Thinktomorrow\Trader\Application\Taxonomy\TaxonomyItem;
+use Thinktomorrow\Trader\Domain\Common\Event\EventDispatcher;
 use Thinktomorrow\Trader\Domain\Common\Locale;
 use Thinktomorrow\Trader\Domain\Model\Product\Personalisation\Personalisation;
 use Thinktomorrow\Trader\Domain\Model\Product\Personalisation\PersonalisationId;
@@ -32,21 +33,37 @@ use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultProductTaxonItem;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultTaxonNode;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultTaxonomyItem;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultVariantTaxonItem;
+use Thinktomorrow\Trader\Infrastructure\Test\EventDispatcherSpy;
 use Thinktomorrow\Trader\Infrastructure\Test\TestContainer;
+use Thinktomorrow\Trader\Infrastructure\Test\TestTraderConfig;
 use Thinktomorrow\Trader\Testing\Repositories\InMemoryCatalogRepositories;
 use Thinktomorrow\Trader\Testing\Repositories\MysqlCatalogRepositories;
+use Thinktomorrow\Trader\TraderConfig;
 
 class Catalog
 {
-    public readonly CatalogRepositories $repos;
-    public readonly CatalogApplications $apps;
+    private CatalogRepositories $repos;
 
     public bool $persist = true;
+
+    private TraderConfig $config;
+    private EventDispatcher $eventDispatcher;
 
     public function __construct(CatalogRepositories $repos)
     {
         $this->repos = $repos;
-        $this->apps = new CatalogApplications($repos);
+        $this->config = new TestTraderConfig();
+        $this->eventDispatcher = new EventDispatcherSpy();
+    }
+
+    public function repos(): CatalogRepositories
+    {
+        return $this->repos;
+    }
+
+    public function apps(): CatalogApplications
+    {
+        return new CatalogApplications($this->repos, $this->config, $this->eventDispatcher);
     }
 
     public function dontPersist(): self
@@ -59,6 +76,20 @@ class Catalog
     public function persist(): self
     {
         $this->persist = true;
+
+        return $this;
+    }
+
+    public function setEventDispatcher(EventDispatcher $eventDispatcher): self
+    {
+        $this->eventDispatcher = $eventDispatcher;
+
+        return $this;
+    }
+
+    public function setConfig(TraderConfig $config): self
+    {
+        $this->config = $config;
 
         return $this;
     }
