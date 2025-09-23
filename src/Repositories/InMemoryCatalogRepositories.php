@@ -2,7 +2,7 @@
 
 namespace Thinktomorrow\Trader\Testing\Repositories;
 
-use Thinktomorrow\Trader\Application\Taxon\Redirect\RedirectRepository;
+use Thinktomorrow\Trader\Application\Taxon\Redirect\TaxonRedirectRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryTaxonRedirectRepository;
 use Thinktomorrow\Trader\Testing\Support\CatalogRepositories;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
@@ -83,7 +83,7 @@ class InMemoryCatalogRepositories implements CatalogRepositories
         return new InMemoryVariantRepository();
     }
 
-    public function taxonRedirectRepository(): RedirectRepository
+    public function taxonRedirectRepository(): TaxonRedirectRepository
     {
         return new InMemoryTaxonRedirectRepository();
     }
