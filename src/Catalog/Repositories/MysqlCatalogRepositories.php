@@ -1,6 +1,6 @@
 <?php
 
-namespace Thinktomorrow\Trader\Testing\Repositories;
+namespace Thinktomorrow\Trader\Testing\Catalog\Repositories;
 
 use Psr\Container\ContainerInterface;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
@@ -14,6 +14,7 @@ use Thinktomorrow\Trader\Domain\Model\Product\ProductRepository;
 use Thinktomorrow\Trader\Domain\Model\Product\VariantRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyRepository;
+use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlProductDetailRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlProductRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlTaxonomyRepository;
@@ -21,12 +22,12 @@ use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlTaxonRedirectR
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlTaxonRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlTaxonTreeRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlVariantRepository;
+use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlVatRateRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\TestContainer;
 use Thinktomorrow\Trader\Infrastructure\Test\TestTraderConfig;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineFlattenedTaxonIds;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineTaxaSelectOptions;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineTaxonFilters;
-use Thinktomorrow\Trader\Testing\Support\CatalogRepositories;
 
 class MysqlCatalogRepositories implements CatalogRepositories
 {
@@ -44,42 +45,42 @@ class MysqlCatalogRepositories implements CatalogRepositories
 
     public function taxonRepository(): TaxonRepository
     {
-        return new MysqlTaxonRepository();
+        return new MysqlTaxonRepository;
     }
 
     public function taxonTreeRepository(): TaxonTreeRepository
     {
-        return new MysqlTaxonTreeRepository(new TestContainer(), new TestTraderConfig());
+        return new MysqlTaxonTreeRepository(new TestContainer, new TestTraderConfig);
     }
 
     public function productRepository(): ProductRepository
     {
-        return new MysqlProductRepository(new MysqlVariantRepository(new TestContainer()));
+        return new MysqlProductRepository(new MysqlVariantRepository(new TestContainer));
     }
 
     public function productDetailRepository(): ProductDetailRepository
     {
-        return new MysqlProductDetailRepository(new TestContainer());
+        return new MysqlProductDetailRepository(new TestContainer);
     }
 
     public function variantRepository(): VariantRepository
     {
-        return new MysqlVariantRepository(new TestContainer());
+        return new MysqlVariantRepository(new TestContainer);
     }
 
     public function variantForCartRepository(): VariantForCartRepository
     {
-        return new MysqlVariantRepository(new TestContainer());
+        return new MysqlVariantRepository(new TestContainer);
     }
 
     public function taxonRedirectRepository(): TaxonRedirectRepository
     {
-        return new MysqlTaxonRedirectRepository();
+        return new MysqlTaxonRedirectRepository;
     }
 
     public function taxonFilters(): TaxonFilters
     {
-        return new VineTaxonFilters(new TestTraderConfig(), $this->taxonTreeRepository(), $this->taxonomyRepository());
+        return new VineTaxonFilters(new TestTraderConfig, $this->taxonTreeRepository(), $this->taxonomyRepository());
     }
 
     public function flattenedTaxonIds(): FlattenedTaxonIds
@@ -90,5 +91,10 @@ class MysqlCatalogRepositories implements CatalogRepositories
     public function taxaSelectOptions(): TaxaSelectOptions
     {
         return new VineTaxaSelectOptions($this->taxonomyRepository(), $this->taxonTreeRepository());
+    }
+
+    public function vatRateRepository(): VatRateRepository
+    {
+        return new MysqlVatRateRepository($this->container);
     }
 }

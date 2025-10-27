@@ -1,6 +1,6 @@
 <?php
 
-namespace Thinktomorrow\Trader\Testing\Repositories;
+namespace Thinktomorrow\Trader\Testing\Catalog\Repositories;
 
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
 use Thinktomorrow\Trader\Application\Product\Grid\FlattenedTaxonIds;
@@ -13,6 +13,7 @@ use Thinktomorrow\Trader\Domain\Model\Product\ProductRepository;
 use Thinktomorrow\Trader\Domain\Model\Product\VariantRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyRepository;
+use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryCountryRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryOrderRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryProductDetailRepository;
@@ -29,10 +30,17 @@ use Thinktomorrow\Trader\Infrastructure\Test\TestTraderConfig;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineFlattenedTaxonIds;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineTaxaSelectOptions;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineTaxonFilters;
-use Thinktomorrow\Trader\Testing\Support\CatalogRepositories;
+use Thinktomorrow\Trader\TraderConfig;
 
 class InMemoryCatalogRepositories implements CatalogRepositories
 {
+    private TraderConfig $config;
+
+    public function __construct(TraderConfig $config)
+    {
+        $this->config = $config;
+    }
+
     public static function clear(): void
     {
         InMemoryTaxonomyRepository::clear();
@@ -50,47 +58,47 @@ class InMemoryCatalogRepositories implements CatalogRepositories
 
     public function taxonomyRepository(): TaxonomyRepository
     {
-        return new InMemoryTaxonomyRepository();
+        return new InMemoryTaxonomyRepository;
     }
 
     public function taxonRepository(): TaxonRepository
     {
-        return new InMemoryTaxonRepository();
+        return new InMemoryTaxonRepository;
     }
 
     public function taxonTreeRepository(): TaxonTreeRepository
     {
-        return new InMemoryTaxonTreeRepository(new TestContainer(), new TestTraderConfig());
+        return new InMemoryTaxonTreeRepository(new TestContainer, new TestTraderConfig);
     }
 
     public function productRepository(): ProductRepository
     {
-        return new InMemoryProductRepository();
+        return new InMemoryProductRepository;
     }
 
     public function productDetailRepository(): ProductDetailRepository
     {
-        return new InMemoryProductDetailRepository();
+        return new InMemoryProductDetailRepository;
     }
 
     public function variantRepository(): VariantRepository
     {
-        return new InMemoryVariantRepository();
+        return new InMemoryVariantRepository;
     }
 
     public function variantForCartRepository(): VariantForCartRepository
     {
-        return new InMemoryVariantRepository();
+        return new InMemoryVariantRepository;
     }
 
     public function taxonRedirectRepository(): TaxonRedirectRepository
     {
-        return new InMemoryTaxonRedirectRepository();
+        return new InMemoryTaxonRedirectRepository;
     }
 
     public function taxonFilters(): TaxonFilters
     {
-        return new VineTaxonFilters(new TestTraderConfig(), $this->taxonTreeRepository(), $this->taxonomyRepository());
+        return new VineTaxonFilters(new TestTraderConfig, $this->taxonTreeRepository(), $this->taxonomyRepository());
     }
 
     public function flattenedTaxonIds(): FlattenedTaxonIds
@@ -101,5 +109,10 @@ class InMemoryCatalogRepositories implements CatalogRepositories
     public function taxaSelectOptions(): TaxaSelectOptions
     {
         return new VineTaxaSelectOptions($this->taxonomyRepository(), $this->taxonTreeRepository());
+    }
+
+    public function vatRateRepository(): VatRateRepository
+    {
+        return new InMemoryVatRateRepository($this->config);
     }
 }

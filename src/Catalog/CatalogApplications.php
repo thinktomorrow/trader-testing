@@ -1,17 +1,20 @@
 <?php
 
-namespace Thinktomorrow\Trader\Testing\Support;
+namespace Thinktomorrow\Trader\Testing\Catalog;
 
 use Thinktomorrow\Trader\Application\Product\ProductApplication;
 use Thinktomorrow\Trader\Application\Taxon\TaxonApplication;
 use Thinktomorrow\Trader\Application\Taxonomy\TaxonomyApplication;
 use Thinktomorrow\Trader\Domain\Common\Event\EventDispatcher;
+use Thinktomorrow\Trader\Testing\Catalog\Repositories\CatalogRepositories;
 use Thinktomorrow\Trader\TraderConfig;
 
 class CatalogApplications
 {
     private CatalogRepositories $repos;
+
     private TraderConfig $config;
+
     private EventDispatcher $eventDispatcher;
 
     public function __construct(CatalogRepositories $repos, TraderConfig $config, EventDispatcher $eventDispatcher)

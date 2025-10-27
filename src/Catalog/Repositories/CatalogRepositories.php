@@ -1,6 +1,6 @@
 <?php
 
-namespace Thinktomorrow\Trader\Testing\Support;
+namespace Thinktomorrow\Trader\Testing\Catalog\Repositories;
 
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
 use Thinktomorrow\Trader\Application\Product\Grid\FlattenedTaxonIds;
@@ -13,6 +13,7 @@ use Thinktomorrow\Trader\Domain\Model\Product\ProductRepository;
 use Thinktomorrow\Trader\Domain\Model\Product\VariantRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyRepository;
+use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
 
 interface CatalogRepositories
 {
@@ -37,4 +38,6 @@ interface CatalogRepositories
     public function flattenedTaxonIds(): FlattenedTaxonIds;
 
     public function taxaSelectOptions(): TaxaSelectOptions;
+
+    public function vatRateRepository(): VatRateRepository;
 }
