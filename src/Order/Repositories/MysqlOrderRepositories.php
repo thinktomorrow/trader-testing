@@ -47,7 +47,9 @@ class MysqlOrderRepositories implements OrderRepositories
         $this->container = $container;
     }
 
-    public static function clear(): void {}
+    public static function clear(): void
+    {
+    }
 
     public function countryRepository(): CountryRepository
     {

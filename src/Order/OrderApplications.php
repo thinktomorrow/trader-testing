@@ -95,6 +95,7 @@ class OrderApplications
         return new FindVatRateForOrder(
             $this->config,
             $this->vatExemptionApplication(),
-            $this->shopRepos->vatRateRepository());
+            $this->shopRepos->vatRateRepository()
+        );
     }
 }
