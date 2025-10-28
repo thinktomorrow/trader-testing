@@ -21,6 +21,7 @@ use Thinktomorrow\Trader\Domain\Model\Promo\DiscountFactory;
 use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\FixedAmountDiscount;
 use Thinktomorrow\Trader\Domain\Model\Promo\PromoRepository;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfileRepository;
+use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlCartRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlCountryRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlCustomerLoginRepository;
@@ -31,6 +32,7 @@ use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlPaymentMethodR
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlPromoRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlShippingProfileRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlVariantRepository;
+use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlVatRateRepository;
 use Thinktomorrow\Trader\TraderConfig;
 
 class MysqlOrderRepositories implements OrderRepositories
@@ -109,5 +111,10 @@ class MysqlOrderRepositories implements OrderRepositories
     public function shippingProfileRepository(): ShippingProfileRepository
     {
         return new MysqlShippingProfileRepository($this->container);
+    }
+
+    public function vatRateRepository(): VatRateRepository
+    {
+        return new MysqlVatRateRepository($this->container);
     }
 }

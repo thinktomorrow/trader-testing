@@ -2,6 +2,7 @@
 
 namespace Thinktomorrow\Trader\Testing\Order\Repositories;
 
+use Psr\Container\ContainerInterface;
 use Thinktomorrow\Trader\Application\Cart\Read\CartRepository;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderRepository;
@@ -20,6 +21,7 @@ use Thinktomorrow\Trader\Domain\Model\Promo\DiscountFactory;
 use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\FixedAmountDiscount;
 use Thinktomorrow\Trader\Domain\Model\Promo\PromoRepository;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfileRepository;
+use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryCartRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryCountryRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryCustomerLoginRepository;
@@ -31,9 +33,20 @@ use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryPromoRepositor
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryShippingProfileRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryVariantRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryVatRateRepository;
+use Thinktomorrow\Trader\TraderConfig;
 
 class InMemoryOrderRepositories implements OrderRepositories
 {
+    private TraderConfig $config;
+
+    private ContainerInterface $container;
+
+    public function __construct(TraderConfig $config, ContainerInterface $container)
+    {
+        $this->config = $config;
+        $this->container = $container;
+    }
+
     public static function clear(): void
     {
         InMemoryOrderRepository::clear();
@@ -104,5 +117,10 @@ class InMemoryOrderRepositories implements OrderRepositories
     public function shippingProfileRepository(): ShippingProfileRepository
     {
         return new InMemoryShippingProfileRepository;
+    }
+
+    public function vatRateRepository(): VatRateRepository
+    {
+        return new InMemoryVatRateRepository($this->config);
     }
 }

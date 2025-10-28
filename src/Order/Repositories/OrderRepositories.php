@@ -12,6 +12,7 @@ use Thinktomorrow\Trader\Domain\Model\Order\OrderRepository;
 use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethodRepository;
 use Thinktomorrow\Trader\Domain\Model\Promo\PromoRepository;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfileRepository;
+use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
 
 interface OrderRepositories
 {
@@ -34,4 +35,6 @@ interface OrderRepositories
     public function customerLoginRepository(): CustomerLoginRepository;
 
     public function promoRepository(): PromoRepository;
+
+    public function vatRateRepository(): VatRateRepository;
 }

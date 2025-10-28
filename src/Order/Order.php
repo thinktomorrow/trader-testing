@@ -25,32 +25,35 @@ use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderPayment;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderShipping;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderShippingAddress;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderShopper;
-use Thinktomorrow\Trader\Domain\Common\Locale;
+use Thinktomorrow\Trader\Domain\Common\Email;
+use Thinktomorrow\Trader\Domain\Model\Country\Country;
+use Thinktomorrow\Trader\Domain\Model\Country\CountryId;
+use Thinktomorrow\Trader\Domain\Model\Customer\Customer;
+use Thinktomorrow\Trader\Domain\Model\CustomerLogin\CustomerLogin;
+use Thinktomorrow\Trader\Domain\Model\Order\Address\BillingAddress;
+use Thinktomorrow\Trader\Domain\Model\Order\Address\ShippingAddress;
+use Thinktomorrow\Trader\Domain\Model\Order\Discount\Discount;
+use Thinktomorrow\Trader\Domain\Model\Order\Discount\DiscountableType;
+use Thinktomorrow\Trader\Domain\Model\Order\Line\Line;
+use Thinktomorrow\Trader\Domain\Model\Order\Order as DomainOrder;
 use Thinktomorrow\Trader\Domain\Model\Order\Payment\DefaultPaymentState;
+use Thinktomorrow\Trader\Domain\Model\Order\Payment\Payment;
 use Thinktomorrow\Trader\Domain\Model\Order\Payment\PaymentState;
 use Thinktomorrow\Trader\Domain\Model\Order\Shipping\DefaultShippingState;
+use Thinktomorrow\Trader\Domain\Model\Order\Shipping\Shipping;
 use Thinktomorrow\Trader\Domain\Model\Order\Shipping\ShippingState;
+use Thinktomorrow\Trader\Domain\Model\Order\Shopper;
 use Thinktomorrow\Trader\Domain\Model\Order\State\DefaultOrderState;
 use Thinktomorrow\Trader\Domain\Model\Order\State\OrderState;
-use Thinktomorrow\Trader\Domain\Model\Product\Personalisation\Personalisation;
-use Thinktomorrow\Trader\Domain\Model\Product\Personalisation\PersonalisationId;
-use Thinktomorrow\Trader\Domain\Model\Product\Personalisation\PersonalisationType;
-use Thinktomorrow\Trader\Domain\Model\Product\Product;
-use Thinktomorrow\Trader\Domain\Model\Product\ProductId;
-use Thinktomorrow\Trader\Domain\Model\Product\ProductState;
-use Thinktomorrow\Trader\Domain\Model\Product\ProductTaxa\ProductTaxon;
-use Thinktomorrow\Trader\Domain\Model\Product\Variant\Variant;
-use Thinktomorrow\Trader\Domain\Model\Product\Variant\VariantId;
-use Thinktomorrow\Trader\Domain\Model\Product\Variant\VariantSalePrice;
-use Thinktomorrow\Trader\Domain\Model\Product\Variant\VariantUnitPrice;
-use Thinktomorrow\Trader\Domain\Model\Product\VariantTaxa\VariantTaxon;
-use Thinktomorrow\Trader\Domain\Model\Taxon\Taxon;
-use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonId;
-use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonKey;
-use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonKeyId;
-use Thinktomorrow\Trader\Domain\Model\Taxonomy\Taxonomy;
-use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyId;
-use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyType;
+use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethod;
+use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethodProviderId;
+use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethodState;
+use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfile;
+use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfileState;
+use Thinktomorrow\Trader\Domain\Model\ShippingProfile\Tariff;
+use Thinktomorrow\Trader\Domain\Model\VatRate\BaseRate;
+use Thinktomorrow\Trader\Domain\Model\VatRate\VatRate;
+use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateState;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultCart;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultCartBillingAddress;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultCartDiscount;
@@ -162,7 +165,7 @@ class Order extends TraderDomain
     public static function inMemory(): self
     {
         return new self(
-            new InMemoryOrderRepositories,
+            new InMemoryOrderRepositories(new TestTraderConfig, new TestContainer)
         );
     }
 
@@ -171,169 +174,350 @@ class Order extends TraderDomain
         return new self(new MysqlOrderRepositories(new TestTraderConfig, new TestContainer));
     }
 
-    public function createTaxonomy(string $taxonomyId = 'taxonomy-aaa', string $type = TaxonomyType::category->value): Taxonomy
+    public function createDefaultOrder(string $orderId = 'order-aaa'): DomainOrder
     {
-        $taxonomy = Taxonomy::create(TaxonomyId::fromString($taxonomyId), TaxonomyType::from($type));
-        $taxonomy->showAsGridFilter();
-        $taxonomy->addData(['title' => ['nl' => $taxonomyId.' title nl', 'fr' => $taxonomyId.' title fr']]);
+        $order = $this->createOrder($orderId);
 
-        $this->saveTaxonomy($taxonomy);
+        // Lines
+        $this->addLineToOrder($order, $this->createLine($orderId, 'line-aaa'));
+        $this->addLineToOrder($order, $this->createLine($orderId, 'line-bbb'));
 
-        return $taxonomy;
+        // Shipping, payment
+        $this->addShippingToOrder($order, $this->createShipping($orderId, 'shipping-aaa'));
+        $this->addPaymentToOrder($order, $this->createPayment($orderId, 'payment-aaa'));
+
+        // Addresses
+        $this->addShippingAddressToOrder($order, $this->createShippingAddress($orderId));
+        $this->addBillingAddressToOrder($order, $this->createBillingAddress($orderId));
+
+        // Shopper
+        $this->addShopperToOrder($order, $this->createShopper($orderId, 'shopper-aaa'));
+
+        // Discount
+        $this->addDiscountToOrder($order, $this->createDiscount($orderId, 'discount-aaa'));
+
+        return $order;
     }
 
-    public function createTaxon(string $taxonId = 'taxon-aaa', string $taxonomyId = 'taxonomy-aaa', ?string $parentId = null): Taxon
+    public function createOrder(string $orderId = 'order-aaa', string $state = DefaultOrderState::cart_pending->value): DomainOrder
     {
-        $taxon = Taxon::create(TaxonId::fromString($taxonId), TaxonomyId::fromString($taxonomyId), $parentId ? TaxonId::fromString($parentId) : null);
-        $taxon->addData(['title' => ['nl' => $taxonId.' title nl', 'fr' => $taxonId.' title fr']]);
-
-        $taxon->updateTaxonKeys([
-            TaxonKey::create($taxon->taxonId, TaxonKeyId::fromString($taxonId.'-key-nl'), Locale::fromString('nl')),
-            TaxonKey::create($taxon->taxonId, TaxonKeyId::fromString($taxonId.'-key-fr'), Locale::fromString('fr')),
-        ]);
-
-        $this->saveTaxon($taxon);
-
-        return $taxon;
-    }
-
-    public function createProduct(string $productId = 'product-aaa', string $variantId = 'variant-aaa'): Product
-    {
-        $product = Product::create(ProductId::fromString($productId));
-        $product->updateState(ProductState::online);
+        $order = DomainOrder::fromMappedData([
+            'order_id' => $orderId,
+            'order_ref' => $orderId.'-ref',
+            'invoice_ref' => $orderId.'-invoice-ref',
+            'order_state' => $state,
+            'data' => json_encode([]),
+        ], []);
 
         if ($this->persist) {
-            $this->saveProduct($product);
+            $this->saveOrder($order);
         }
 
-        $this->createVariant($product, $variantId);
-
-        return $product;
+        return $order;
     }
 
-    public function createVariant(string|Product $productId = 'product-aaa', string $variantId = 'variant-aaa'): Variant
+    public function createLine(string $orderId = 'order-aaa', string $lineId = 'line-aaa', array $values = []): Line
     {
-        $product = $productId instanceof Product ? $productId : $this->repos->productRepository()->find(ProductId::fromString($productId));
+        return Line::fromMappedData(array_merge([
+            'line_id' => $lineId,
+            'variant_id' => 'variant-aaa',
+            'line_price' => 100,
+            'tax_rate' => '21',
+            'includes_vat' => true,
+            'quantity' => 1,
+            'data' => json_encode(['title' => ['nl' => $lineId.' title nl', 'fr' => $lineId.' title fr']]),
+        ], $values), [
+            'order_id' => $orderId,
+        ]);
+    }
 
-        $variant = Variant::create(
-            $product->productId,
-            VariantId::fromString($variantId),
-            VariantUnitPrice::fromScalars(100, '20', false),
-            VariantSalePrice::fromScalars(80, '20', false),
-            'sku-'.$variantId
+    public function addLineToOrder(DomainOrder $order, Line $line): DomainOrder
+    {
+        $order->addOrUpdateLine(
+            $line->lineId,
+            $line->getVariantId(),
+            $line->getLinePrice(),
+            $line->getQuantity(),
+            $line->getData()
         );
 
-        $variant->showInGrid();
+        if ($this->persist) {
+            $this->saveOrder($order);
+        }
 
-        $product->createVariant($variant);
+        return $order;
+    }
+
+    public function createShipping(string $orderId = 'order-aaa', string $shippingId = 'shipping-aaa', array $values = []): Shipping
+    {
+        return Shipping::fromMappedData(array_merge([
+            'order_id' => $orderId,
+            'shipping_id' => $shippingId,
+            'shipping_profile_id' => 'shipping-profile-aaa',
+            'shipping_state' => DefaultShippingState::none,
+            'cost' => 50,
+            'tax_rate' => '21',
+            'includes_vat' => true,
+            'data' => json_encode(['title' => ['nl' => $shippingId.' title nl', 'fr' => $shippingId.' title fr']]),
+        ], $values), [
+            'order_id' => $orderId,
+        ]);
+    }
+
+    public function addShippingToOrder(DomainOrder $order, Shipping $shipping): DomainOrder
+    {
+        $order->addShipping($shipping);
 
         if ($this->persist) {
-            $this->saveProduct($product);
+            $this->saveOrder($order);
         }
 
-        return $variant;
+        return $order;
     }
 
-    public function saveTaxonomy(Taxonomy $taxonomy): void
+    public function createPayment(string $orderId = 'order-aaa', string $paymentId = 'payment-aaa', array $values = []): Payment
     {
-        $this->repos->taxonomyRepository()->save($taxonomy);
+        return Payment::fromMappedData(array_merge([
+            'payment_id' => $paymentId,
+            'payment_method_id' => 'payment-method-aaa',
+            'payment_state' => DefaultPaymentState::initialized,
+            'cost' => 20,
+            'tax_rate' => '21',
+            'includes_vat' => true,
+            'data' => json_encode(['title' => ['nl' => $paymentId.' title nl', 'fr' => $paymentId.' title fr']]),
+        ], $values), [
+            'order_id' => $orderId,
+        ]);
     }
 
-    public function saveTaxon(Taxon $taxon): void
+    public function addPaymentToOrder(DomainOrder $order, Payment $payment): DomainOrder
     {
-        $this->repos->taxonRepository()->save($taxon);
-    }
+        $order->addPayment($payment);
 
-    public function saveProduct(Product $product): void
-    {
-        $this->repos->productRepository()->save($product);
-    }
-
-    public function linkProductToTaxon(string|Product $productId, string|Taxon $taxonId): Product
-    {
-        $product = $productId instanceof Product ? $productId : $this->repos->productRepository()->find(ProductId::fromString($productId));
-        $taxon = $taxonId instanceof Taxon ? $taxonId : $this->repos->taxonRepository()->find(TaxonId::fromString($taxonId));
-
-        $productTaxon = ProductTaxon::create($product->productId, $taxon->taxonId);
-
-        // If taxonomy is of type variant_property, we need to set the relation as a VariantTaxon instead of default ProductTaxon
-        $taxonomy = $this->repos->taxonomyRepository()->find($taxon->taxonomyId);
-        if ($taxonomy->getType() == TaxonomyType::variant_property) {
-            $productTaxon = $productTaxon->toVariantProperty();
+        if ($this->persist) {
+            $this->saveOrder($order);
         }
 
-        $product->updateProductTaxa([
-            ...$product->getProductTaxa(),
-            $productTaxon,
+        return $order;
+    }
+
+    public function createShippingAddress(string $orderId = 'order-aaa', array $values = []): ShippingAddress
+    {
+        return ShippingAddress::fromMappedData(array_merge([
+            'country_id' => 'BE',
+            'line_1' => 'Lierseweg 81',
+            'postal_code' => '2200',
+            'city' => 'Herentals',
+            'data' => '[]',
+        ], $values), ['order_id' => $orderId]);
+    }
+
+    public function addShippingAddressToOrder(DomainOrder $order, ShippingAddress $shippingAddress): DomainOrder
+    {
+        $order->updateShippingAddress($shippingAddress);
+
+        if ($this->persist) {
+            $this->saveOrder($order);
+        }
+
+        return $order;
+    }
+
+    public function createBillingAddress(string $orderId = 'order-aaa', array $values = []): BillingAddress
+    {
+        return BillingAddress::fromMappedData(array_merge([
+            'country_id' => 'NL',
+            'line_1' => 'Example 12',
+            'postal_code' => '1000',
+            'city' => 'Amsterdam',
+            'data' => '[]',
+        ], $values), ['order_id' => $orderId]);
+    }
+
+    public function addBillingAddressToOrder(DomainOrder $order, BillingAddress $billingAddress): DomainOrder
+    {
+        $order->updateBillingAddress($billingAddress);
+
+        if ($this->persist) {
+            $this->saveOrder($order);
+        }
+
+        return $order;
+    }
+
+    public function createShopper(string $orderId = 'order-aaa', string $shopperId = 'shopper-aaa', array $values = []): Shopper
+    {
+        return Shopper::fromMappedData(array_merge([
+            'shopper_id' => $shopperId,
+            'email' => 'ben@thinktomorrow.be',
+            'is_business' => false,
+            'locale' => 'nl_BE',
+            'data' => json_encode([]),
+        ], $values), ['order_id' => $orderId]);
+    }
+
+    public function addShopperToOrder(DomainOrder $order, Shopper $shopper): DomainOrder
+    {
+        $order->updateShopper($shopper);
+
+        if ($this->persist) {
+            $this->saveOrder($order);
+        }
+
+        return $order;
+    }
+
+    public function createDiscount(string $orderId = 'order-aaa', string $discountId = 'discount-aaa', array $values = []): Discount
+    {
+        return Discount::fromMappedData(array_merge([
+            'discount_id' => $discountId,
+            'discountable_type' => DiscountableType::order->value,
+            'discountable_id' => $orderId,
+            'promo_id' => 'promo-aaa',
+            'promo_discount_id' => 'promo-disc-aaa',
+            'total' => '15',
+            'tax_rate' => '21',
+            'includes_vat' => true,
+            'data' => json_encode([]),
+        ], $values), ['order_id' => $orderId]);
+    }
+
+    public function addDiscountToOrder(DomainOrder $order, Discount $discount): DomainOrder
+    {
+        $order->addDiscount($discount);
+
+        if ($this->persist) {
+            $this->saveOrder($order);
+        }
+
+        return $order;
+    }
+
+    public function createPaymentMethod(string $paymentMethodId = 'payment-method-aaa', array $values = []): PaymentMethod
+    {
+        $model = PaymentMethod::fromMappedData(array_merge([
+            'payment_method_id' => $paymentMethodId,
+            'provider_id' => PaymentMethodProviderId::fromString('mollie')->get(),
+            'state' => PaymentMethodState::online->value,
+            'rate' => '123',
+            'data' => json_encode([]),
+        ], $values), [CountryId::class => []]);
+
+        if ($this->persist) {
+            $this->orderRepos->paymentMethodRepository()->save($model);
+        }
+
+        return $model;
+    }
+
+    public function createShippingProfile(string $shippingProfileId = 'shipping-profile-aaa', array $values = []): ShippingProfile
+    {
+        $model = ShippingProfile::fromMappedData(array_merge([
+            'shipping_profile_id' => $shippingProfileId,
+            'provider_id' => 'postnl',
+            'state' => ShippingProfileState::online->value,
+            'requires_address' => true,
+            'data' => json_encode([]),
+        ], $values), [Tariff::class => [], CountryId::class => []]);
+
+        if ($this->persist) {
+            $this->orderRepos->shippingProfileRepository()->save($model);
+        }
+
+        return $model;
+    }
+
+    public function createVatRate(string $vatRateId = 'vatrate-aaa', array $values = [], array $baseRateValues = []): VatRate
+    {
+        $model = VatRate::fromMappedData(array_merge([
+            'vat_rate_id' => $vatRateId,
+            'country_id' => 'BE',
+            'rate' => '21',
+            'is_standard' => true,
+            'state' => VatRateState::online->value,
+            'data' => json_encode([]),
+        ], $values), [
+            BaseRate::class => [
+                array_merge([
+                    'base_rate_id' => 'baserate-aaa',
+                    'origin_vat_rate_id' => 'origin-aaa',
+                    'target_vat_rate_id' => 'target-aaa',
+                    'rate' => '21',
+                ], $baseRateValues),
+            ],
         ]);
 
         if ($this->persist) {
-            $this->repos->productRepository()->save($product);
+            $this->orderRepos->vatRateRepository()->save($model);
         }
 
-        return $product;
+        return $model;
     }
 
-    public function linkVariantToTaxon(string $productId, string $variantId, string $taxonId): Product
+    public function createCountry(string $countryId = 'BE', array $values = []): Country
     {
-        $product = $this->repos->productRepository()->find(ProductId::fromString($productId));
-        $variant = $product->findVariant(VariantId::fromString($variantId));
-
-        $variant->updateVariantTaxa([
-            ...$variant->getVariantTaxa(),
-            VariantTaxon::create(VariantId::fromString($variantId), TaxonId::fromString($taxonId)),
-        ]);
+        $model = Country::fromMappedData(array_merge([
+            'country_id' => $countryId,
+            'data' => json_encode([]),
+        ], $values));
 
         if ($this->persist) {
-            $this->repos->productRepository()->save($product);
+            $this->orderRepos->countryRepository()->save($model);
         }
 
-        return $product;
+        return $model;
     }
 
-    public function makePersonalisation(string $productId = 'product-aaa', string $personalisationId = 'personalisation-aaa'): Personalisation
+    public function saveOrder(DomainOrder $order): void
     {
-        return Personalisation::create(
-            ProductId::fromString($productId),
-            PersonalisationId::fromString($personalisationId),
-            PersonalisationType::fromString(PersonalisationType::TEXT),
-            ['foo' => 'bar']
+        $this->orderRepos->orderRepository()->save($order);
+    }
+
+    public function createCustomer(string $customerId = 'customer-aaa', array $values = []): Customer
+    {
+        $model = Customer::fromMappedData(array_merge([
+            'customer_id' => $customerId,
+            'email' => 'ben@thinktomorrow.be',
+            'is_business' => false,
+            'locale' => 'nl_BE',
+            'data' => json_encode([]),
+        ], $values), []);
+
+        if ($this->persist) {
+            $this->orderRepos->customerRepository()->save($model);
+        }
+
+        return $model;
+    }
+
+    public function createCustomerLogin(Customer $customer, string $password = '123456'): CustomerLogin
+    {
+        $model = CustomerLogin::create(
+            $customer->customerId,
+            Email::fromString($customer->getEmail()->get()),
+            bcrypt($password)
         );
+
+        if ($this->persist) {
+            $this->orderRepos->customerLoginRepository()->save($model);
+        }
+
+        return $model;
     }
 
-    public function addPersonalisationToProduct(Product $product, Personalisation $personalisation): Product
+    // --------------------------------------------------------------------------
+    // Data provider for tests
+    // --------------------------------------------------------------------------
+
+    public function orders(): array
     {
-        $product->updatePersonalisations([
-            $personalisation,
-        ]);
-
-        return $product;
-    }
-
-    /**
-     * Data provider for tests, providing different product setups.
-     *
-     * 1. Product with variant
-     * 2. Product without variant
-     * 3. Product with personalisation
-     * 4. Product linked to taxon
-     * 5. Product linked to multiple taxons (from different taxonomies)
-     */
-    public function products(): array
-    {
-        // For product with taxon
-        $this->createTaxonomy();
-        $taxon = $this->createTaxon();
-
-        $taxonomy2 = $this->createTaxonomy('taxonomy-bbb', TaxonomyType::variant_property->value);
-        $taxon2 = $this->createTaxon('taxon-bbb', $taxonomy2->taxonomyId->get());
+        $orderWithLine = $this->createOrder('order-bbb');
+        $line = $this->createLine('order-bbb', 'line-bbb');
+        $this->addLineToOrder($orderWithLine, $line);
 
         return [
-            $this->createProduct(),
-            Product::create(ProductId::fromString('product-aaa')), // Without variant
-            $this->addPersonalisationToProduct($this->createProduct(), $this->makePersonalisation()),
-            $this->linkProductToTaxon($this->createProduct(), $taxon),
-            $this->linkProductToTaxon($this->linkProductToTaxon($this->createProduct(), $taxon2), $taxon),
+            $this->createOrder(),
+            $orderWithLine,
         ];
     }
 }
