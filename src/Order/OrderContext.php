@@ -84,9 +84,9 @@ use Thinktomorrow\Trader\Testing\Catalog\Repositories\InMemoryCatalogRepositorie
 use Thinktomorrow\Trader\Testing\Order\Repositories\InMemoryOrderRepositories;
 use Thinktomorrow\Trader\Testing\Order\Repositories\MysqlOrderRepositories;
 use Thinktomorrow\Trader\Testing\Order\Repositories\OrderRepositories;
-use Thinktomorrow\Trader\Testing\TraderDomain;
+use Thinktomorrow\Trader\Testing\TraderContext;
 
-class Order extends TraderDomain
+class OrderContext extends TraderContext
 {
     private OrderRepositories $orderRepos;
 

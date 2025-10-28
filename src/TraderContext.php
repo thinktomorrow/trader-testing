@@ -7,7 +7,7 @@ use Thinktomorrow\Trader\Infrastructure\Test\EventDispatcherSpy;
 use Thinktomorrow\Trader\Infrastructure\Test\TestTraderConfig;
 use Thinktomorrow\Trader\TraderConfig;
 
-abstract class TraderDomain
+abstract class TraderContext
 {
     public bool $persist = true;
 

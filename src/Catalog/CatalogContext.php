@@ -39,9 +39,9 @@ use Thinktomorrow\Trader\Infrastructure\Test\TestTraderConfig;
 use Thinktomorrow\Trader\Testing\Catalog\Repositories\CatalogRepositories;
 use Thinktomorrow\Trader\Testing\Catalog\Repositories\InMemoryCatalogRepositories;
 use Thinktomorrow\Trader\Testing\Catalog\Repositories\MysqlCatalogRepositories;
-use Thinktomorrow\Trader\Testing\TraderDomain;
+use Thinktomorrow\Trader\Testing\TraderContext;
 
-class Catalog extends TraderDomain
+class CatalogContext extends TraderContext
 {
     private CatalogRepositories $catalogRepos;
 
