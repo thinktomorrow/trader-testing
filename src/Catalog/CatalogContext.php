@@ -84,6 +84,7 @@ class CatalogContext extends TraderContext
         return [
             self::inMemory(),
             self::mysql(),
+            self::laravel(),
         ];
     }
 
@@ -95,6 +96,13 @@ class CatalogContext extends TraderContext
     public static function mysql(): self
     {
         return new self(new MysqlCatalogRepositories(new TestContainer));
+    }
+
+    public static function laravel(): self
+    {
+        $container = app();
+
+        return new self(new MysqlCatalogRepositories($container));
     }
 
     public function createTaxonomy(string $taxonomyId = 'taxonomy-aaa', string $type = TaxonomyType::category->value): Taxonomy

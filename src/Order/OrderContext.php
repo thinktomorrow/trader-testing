@@ -54,6 +54,7 @@ use Thinktomorrow\Trader\Domain\Model\ShippingProfile\Tariff;
 use Thinktomorrow\Trader\Domain\Model\VatRate\BaseRate;
 use Thinktomorrow\Trader\Domain\Model\VatRate\VatRate;
 use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateState;
+use Thinktomorrow\Trader\Infrastructure\Laravel\config\TraderConfig;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultCart;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultCartBillingAddress;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultCartDiscount;
@@ -159,6 +160,7 @@ class OrderContext extends TraderContext
         return [
             self::inMemory(),
             self::mysql(),
+            self::laravel(),
         ];
     }
 
@@ -172,6 +174,14 @@ class OrderContext extends TraderContext
     public static function mysql(): self
     {
         return new self(new MysqlOrderRepositories(new TestTraderConfig, new TestContainer));
+    }
+
+    public static function laravel(): self
+    {
+        $config = app(TraderConfig::class);
+        $container = app();
+
+        return new self(new MysqlOrderRepositories($config, $container));
     }
 
     public function createDefaultOrder(string $orderId = 'order-aaa'): DomainOrder
@@ -205,7 +215,7 @@ class OrderContext extends TraderContext
             'order_id' => $orderId,
             'order_ref' => $orderId.'-ref',
             'invoice_ref' => $orderId.'-invoice-ref',
-            'order_state' => $state,
+            'order_state' => $this->container->get(OrderState::class)::fromString($state),
             'data' => json_encode([]),
         ], []);
 
