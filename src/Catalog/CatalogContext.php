@@ -29,6 +29,7 @@ use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonKeyId;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\Taxonomy;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyId;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyType;
+use Thinktomorrow\Trader\Infrastructure\Laravel\config\TraderConfig;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultProductDetail;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultProductTaxonItem;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultTaxonNode;
@@ -100,9 +101,15 @@ class CatalogContext extends TraderContext
 
     public static function laravel(): self
     {
+        $config = app(TraderConfig::class);
         $container = app();
 
-        return new self(new MysqlCatalogRepositories($container));
+        $context = new self(new MysqlCatalogRepositories($container));
+
+        $context->setConfig($config);
+        $context->setContainer($container);
+
+        return $context;
     }
 
     public function createTaxonomy(string $taxonomyId = 'taxonomy-aaa', string $type = TaxonomyType::category->value): Taxonomy

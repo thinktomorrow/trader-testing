@@ -35,7 +35,9 @@ use Thinktomorrow\Trader\Domain\Model\Order\Address\ShippingAddress;
 use Thinktomorrow\Trader\Domain\Model\Order\Discount\Discount;
 use Thinktomorrow\Trader\Domain\Model\Order\Discount\DiscountableType;
 use Thinktomorrow\Trader\Domain\Model\Order\Line\Line;
+use Thinktomorrow\Trader\Domain\Model\Order\Line\Personalisations\LinePersonalisation;
 use Thinktomorrow\Trader\Domain\Model\Order\Order as DomainOrder;
+use Thinktomorrow\Trader\Domain\Model\Order\OrderEvent\OrderEvent;
 use Thinktomorrow\Trader\Domain\Model\Order\Payment\DefaultPaymentState;
 use Thinktomorrow\Trader\Domain\Model\Order\Payment\Payment;
 use Thinktomorrow\Trader\Domain\Model\Order\Payment\PaymentState;
@@ -48,6 +50,10 @@ use Thinktomorrow\Trader\Domain\Model\Order\State\OrderState;
 use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethod;
 use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethodProviderId;
 use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethodState;
+use Thinktomorrow\Trader\Domain\Model\Promo\Condition;
+use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\PercentageOffDiscount;
+use Thinktomorrow\Trader\Domain\Model\Promo\Promo;
+use Thinktomorrow\Trader\Domain\Model\Promo\PromoState;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfile;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfileState;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\Tariff;
@@ -181,11 +187,21 @@ class OrderContext extends TraderContext
         $config = app(TraderConfig::class);
         $container = app();
 
-        return new self(new MysqlOrderRepositories($config, $container));
+        $context = new self(new MysqlOrderRepositories($config, $container));
+
+        $context->setConfig($config);
+        $context->setContainer($container);
+
+        return $context;
     }
 
     public function createDefaultOrder(string $orderId = 'order-aaa'): DomainOrder
     {
+        $this->createShippingProfile();
+        $this->createPaymentMethod();
+        $this->createCountry();
+        $this->createPromo();
+
         $order = $this->createOrder($orderId);
 
         // Lines
@@ -217,7 +233,16 @@ class OrderContext extends TraderContext
             'invoice_ref' => $orderId.'-invoice-ref',
             'order_state' => $this->container->get(OrderState::class)::fromString($state),
             'data' => json_encode([]),
-        ], []);
+        ], [
+            Discount::class => [],
+            Line::class => [],
+            Shipping::class => [],
+            Payment::class => [],
+            ShippingAddress::class => null,
+            BillingAddress::class => null,
+            Shopper::class => null,
+            OrderEvent::class => [],
+        ]);
 
         if ($this->persist) {
             $this->saveOrder($order);
@@ -229,27 +254,30 @@ class OrderContext extends TraderContext
     public function createLine(string $orderId = 'order-aaa', string $lineId = 'line-aaa', array $values = []): Line
     {
         return Line::fromMappedData(array_merge([
-            'line_id' => $lineId,
+            'line_id' => $orderId.':'.$lineId,
             'variant_id' => 'variant-aaa',
             'line_price' => 100,
             'tax_rate' => '21',
             'includes_vat' => true,
             'quantity' => 1,
-            'data' => json_encode(['title' => ['nl' => $lineId.' title nl', 'fr' => $lineId.' title fr']]),
+            'reduced_from_stock' => false,
+            'data' => json_encode([
+                'product_id' => 'product-aaa',
+                'unit_price_excluding_vat' => '82.64',
+                'unit_price_including_vat' => '100',
+                'title' => ['nl' => $lineId.' title nl', 'fr' => $lineId.' title fr'],
+            ]),
         ], $values), [
             'order_id' => $orderId,
+        ], [
+            Discount::class => [],
+            LinePersonalisation::class => [],
         ]);
     }
 
     public function addLineToOrder(DomainOrder $order, Line $line): DomainOrder
     {
-        $order->addOrUpdateLine(
-            $line->lineId,
-            $line->getVariantId(),
-            $line->getLinePrice(),
-            $line->getQuantity(),
-            $line->getData()
-        );
+        $order->addOrUpdateLine($line);
 
         if ($this->persist) {
             $this->saveOrder($order);
@@ -262,7 +290,7 @@ class OrderContext extends TraderContext
     {
         return Shipping::fromMappedData(array_merge([
             'order_id' => $orderId,
-            'shipping_id' => $shippingId,
+            'shipping_id' => $orderId.':'.$shippingId,
             'shipping_profile_id' => 'shipping-profile-aaa',
             'shipping_state' => DefaultShippingState::none,
             'cost' => 50,
@@ -271,6 +299,8 @@ class OrderContext extends TraderContext
             'data' => json_encode(['title' => ['nl' => $shippingId.' title nl', 'fr' => $shippingId.' title fr']]),
         ], $values), [
             'order_id' => $orderId,
+        ], [
+            Discount::class => [],
         ]);
     }
 
@@ -288,7 +318,7 @@ class OrderContext extends TraderContext
     public function createPayment(string $orderId = 'order-aaa', string $paymentId = 'payment-aaa', array $values = []): Payment
     {
         return Payment::fromMappedData(array_merge([
-            'payment_id' => $paymentId,
+            'payment_id' => $orderId.':'.$paymentId,
             'payment_method_id' => 'payment-method-aaa',
             'payment_state' => DefaultPaymentState::initialized,
             'cost' => 20,
@@ -297,6 +327,8 @@ class OrderContext extends TraderContext
             'data' => json_encode(['title' => ['nl' => $paymentId.' title nl', 'fr' => $paymentId.' title fr']]),
         ], $values), [
             'order_id' => $orderId,
+        ], [
+            Discount::class => [],
         ]);
     }
 
@@ -316,6 +348,7 @@ class OrderContext extends TraderContext
         return ShippingAddress::fromMappedData(array_merge([
             'country_id' => 'BE',
             'line_1' => 'Lierseweg 81',
+            'line_2' => '',
             'postal_code' => '2200',
             'city' => 'Herentals',
             'data' => '[]',
@@ -338,6 +371,7 @@ class OrderContext extends TraderContext
         return BillingAddress::fromMappedData(array_merge([
             'country_id' => 'NL',
             'line_1' => 'Example 12',
+            'line_2' => '',
             'postal_code' => '1000',
             'city' => 'Amsterdam',
             'data' => '[]',
@@ -358,11 +392,18 @@ class OrderContext extends TraderContext
     public function createShopper(string $orderId = 'order-aaa', string $shopperId = 'shopper-aaa', array $values = []): Shopper
     {
         return Shopper::fromMappedData(array_merge([
-            'shopper_id' => $shopperId,
+            'shopper_id' => $orderId.':'.$shopperId,
+            'customer_id' => null,
             'email' => 'ben@thinktomorrow.be',
             'is_business' => false,
             'locale' => 'nl_BE',
-            'data' => json_encode([]),
+            'register_after_checkout' => false,
+            'data' => json_encode([
+                'firstname' => 'Ben',
+                'lastname' => 'Cavens',
+                'company' => 'Think Tomorrow',
+                'phone' => '',
+            ]),
         ], $values), ['order_id' => $orderId]);
     }
 
@@ -380,16 +421,50 @@ class OrderContext extends TraderContext
     public function createDiscount(string $orderId = 'order-aaa', string $discountId = 'discount-aaa', array $values = []): Discount
     {
         return Discount::fromMappedData(array_merge([
-            'discount_id' => $discountId,
+            'discount_id' => $orderId.':'.$discountId,
             'discountable_type' => DiscountableType::order->value,
             'discountable_id' => $orderId,
             'promo_id' => 'promo-aaa',
-            'promo_discount_id' => 'promo-disc-aaa',
+            'promo_discount_id' => 'promo-discount-aaa',
             'total' => '15',
             'tax_rate' => '21',
             'includes_vat' => true,
             'data' => json_encode([]),
         ], $values), ['order_id' => $orderId]);
+    }
+
+    public function createPromo(string $promoId = 'promo-aaa', array $values = [], array $discountValues = []): Promo
+    {
+        $model = Promo::fromMappedData(array_merge([
+            'promo_id' => $promoId,
+            'coupon_code' => 'PROMO123',
+            'state' => PromoState::online->value,
+            'is_combinable' => false,
+            'start_at' => null,
+            'end_at' => null,
+            'data' => json_encode([]),
+        ], $values), [
+            \Thinktomorrow\Trader\Domain\Model\Promo\Discount::class => [
+                PercentageOffDiscount::fromMappedData(array_merge([
+                    'discount_id' => 'promo-discount-aaa',
+                    'description' => '15% off',
+                    'discount_type' => 'percentage',
+                    'data' => json_encode([
+                        'percentage' => '15',
+                    ]),
+                ], $discountValues), [
+                    'promo_id' => $promoId,
+                ], [
+                    Condition::class => [],
+                ]),
+            ],
+        ]);
+
+        if ($this->persist) {
+            $this->orderRepos->promoRepository()->save($model);
+        }
+
+        return $model;
     }
 
     public function addDiscountToOrder(DomainOrder $order, Discount $discount): DomainOrder
@@ -490,14 +565,69 @@ class OrderContext extends TraderContext
             'email' => 'ben@thinktomorrow.be',
             'is_business' => false,
             'locale' => 'nl_BE',
-            'data' => json_encode([]),
-        ], $values), []);
+            'data' => json_encode([
+                'firstname' => 'Ben',
+                'lastname' => 'Cavens',
+                'company' => 'Think Tomorrow',
+                'phone' => '01293494',
+                'vat' => 'BE0123456789',
+            ]),
+        ], $values), [
+            \Thinktomorrow\Trader\Domain\Model\Customer\Address\BillingAddress::class => null,
+            \Thinktomorrow\Trader\Domain\Model\Customer\Address\ShippingAddress::class => null,
+        ]);
 
         if ($this->persist) {
             $this->orderRepos->customerRepository()->save($model);
         }
 
         return $model;
+    }
+
+    public function createCustomerBillingAddress(string $customerId = 'customer-aaa', array $values = []): \Thinktomorrow\Trader\Domain\Model\Customer\Address\BillingAddress
+    {
+        return \Thinktomorrow\Trader\Domain\Model\Customer\Address\BillingAddress::fromMappedData(array_merge([
+            'country_id' => 'NL',
+            'line_1' => 'Example 12',
+            'line_2' => '',
+            'postal_code' => '1000',
+            'city' => 'Amsterdam',
+            'data' => '[]',
+        ], $values), ['customer_id' => $customerId]);
+    }
+
+    public function createCustomerShippingAddress(string $customerId = 'customer-aaa', array $values = []): \Thinktomorrow\Trader\Domain\Model\Customer\Address\ShippingAddress
+    {
+        return \Thinktomorrow\Trader\Domain\Model\Customer\Address\ShippingAddress::fromMappedData(array_merge([
+            'country_id' => 'BE',
+            'line_1' => 'Lierseweg 81',
+            'line_2' => '',
+            'postal_code' => '2200',
+            'city' => 'Herentals',
+            'data' => '[]',
+        ], $values), ['customer_id' => $customerId]);
+    }
+
+    public function addBillingAddressToCustomer(Customer $customer, \Thinktomorrow\Trader\Domain\Model\Customer\Address\BillingAddress $billingAddress): Customer
+    {
+        $customer->updateBillingAddress($billingAddress);
+
+        if ($this->persist) {
+            $this->orderRepos->customerRepository()->save($customer);
+        }
+
+        return $customer;
+    }
+
+    public function addShippingAddressToCustomer(Customer $customer, \Thinktomorrow\Trader\Domain\Model\Customer\Address\ShippingAddress $shippingAddress): Customer
+    {
+        $customer->updateShippingAddress($shippingAddress);
+
+        if ($this->persist) {
+            $this->orderRepos->customerRepository()->save($customer);
+        }
+
+        return $customer;
     }
 
     public function createCustomerLogin(Customer $customer, string $password = '123456'): CustomerLogin
