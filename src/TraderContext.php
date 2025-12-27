@@ -13,6 +13,12 @@ abstract class TraderContext
 {
     public bool $persist = true;
 
+    /**
+     * Release the initial events when creating the aggregate. This way you can test
+     * the specific domain events that occur after creation.
+     */
+    public bool $keepDomainEvents = false;
+
     protected TraderConfig $config;
 
     protected ContainerInterface $container;
@@ -36,6 +42,20 @@ abstract class TraderContext
     public function persist(): self
     {
         $this->persist = true;
+
+        return $this;
+    }
+
+    public function keepDomainEvents(): self
+    {
+        $this->keepDomainEvents = true;
+
+        return $this;
+    }
+
+    public function releaseDomainEvents(): self
+    {
+        $this->keepDomainEvents = false;
 
         return $this;
     }

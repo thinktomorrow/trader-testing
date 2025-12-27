@@ -36,8 +36,11 @@ use Thinktomorrow\Trader\Domain\Model\Order\Discount\Discount;
 use Thinktomorrow\Trader\Domain\Model\Order\Discount\DiscountableType;
 use Thinktomorrow\Trader\Domain\Model\Order\Line\Line;
 use Thinktomorrow\Trader\Domain\Model\Order\Line\Personalisations\LinePersonalisation;
+use Thinktomorrow\Trader\Domain\Model\Order\Order;
 use Thinktomorrow\Trader\Domain\Model\Order\Order as DomainOrder;
 use Thinktomorrow\Trader\Domain\Model\Order\OrderEvent\OrderEvent;
+use Thinktomorrow\Trader\Domain\Model\Order\OrderId;
+use Thinktomorrow\Trader\Domain\Model\Order\OrderReference;
 use Thinktomorrow\Trader\Domain\Model\Order\Payment\DefaultPaymentState;
 use Thinktomorrow\Trader\Domain\Model\Order\Payment\Payment;
 use Thinktomorrow\Trader\Domain\Model\Order\Payment\PaymentState;
@@ -222,6 +225,9 @@ class OrderContext extends TraderContext
         // Discount
         $this->addDiscountToOrder($order, $this->createDiscount($orderId, 'discount-aaa'));
 
+        // Clear all these default events
+        $order->releaseEvents();
+
         return $order;
     }
 
@@ -232,6 +238,18 @@ class OrderContext extends TraderContext
             'order_ref' => $orderId.'-ref',
             'invoice_ref' => $orderId.'-invoice-ref',
             'order_state' => $this->container->get(OrderState::class)::fromString($state),
+            'total_excl' => 82500,
+            'total_incl' => 100000,
+            'total_vat' => 17500,
+            'vat_lines' => json_encode([]),
+            'subtotal_excl' => 82500,
+            'subtotal_incl' => 100000,
+            'discount_total_excl' => 5785,
+            'discount_total_incl' => 7000,
+            'shipping_cost_excl' => 4132,
+            'shipping_cost_incl' => 5000,
+            'payment_cost_excl' => 1653,
+            'payment_cost_incl' => 2000,
             'data' => json_encode([]),
         ], [
             Discount::class => [],
@@ -251,19 +269,33 @@ class OrderContext extends TraderContext
         return $order;
     }
 
+    public function createEmptyOrder(string $orderId = 'order-aaa'): Order
+    {
+        return Order::create(
+            OrderId::fromString($orderId),
+            OrderReference::fromString($orderId.'-ref'),
+            DefaultOrderState::getDefaultState()
+        );
+    }
+
     public function createLine(string $orderId = 'order-aaa', string $lineId = 'line-aaa', array $values = []): Line
     {
         return Line::fromMappedData(array_merge([
             'line_id' => $orderId.':'.$lineId,
             'variant_id' => 'variant-aaa',
-            'line_price' => 100,
+            'unit_price_incl' => '83',
+            'unit_price_excl' => '100',
+            'total_excl' => '83',
+            'total_incl' => '100',
+            'total_vat' => '17',
+            'discount_excl' => '0',
             'tax_rate' => '21',
-            'includes_vat' => true,
+            'includes_vat' => false,
             'quantity' => 1,
             'reduced_from_stock' => false,
             'data' => json_encode([
                 'product_id' => 'product-aaa',
-                'unit_price_excluding_vat' => '82.64',
+                'unit_price_excluding_vat' => '83',
                 'unit_price_including_vat' => '100',
                 'title' => ['nl' => $lineId.' title nl', 'fr' => $lineId.' title fr'],
             ]),
@@ -294,8 +326,6 @@ class OrderContext extends TraderContext
             'shipping_profile_id' => 'shipping-profile-aaa',
             'shipping_state' => DefaultShippingState::none,
             'cost' => 50,
-            'tax_rate' => '21',
-            'includes_vat' => true,
             'data' => json_encode(['title' => ['nl' => $shippingId.' title nl', 'fr' => $shippingId.' title fr']]),
         ], $values), [
             'order_id' => $orderId,
@@ -322,8 +352,6 @@ class OrderContext extends TraderContext
             'payment_method_id' => 'payment-method-aaa',
             'payment_state' => DefaultPaymentState::initialized,
             'cost' => 20,
-            'tax_rate' => '21',
-            'includes_vat' => true,
             'data' => json_encode(['title' => ['nl' => $paymentId.' title nl', 'fr' => $paymentId.' title fr']]),
         ], $values), [
             'order_id' => $orderId,
@@ -427,10 +455,44 @@ class OrderContext extends TraderContext
             'promo_id' => 'promo-aaa',
             'promo_discount_id' => 'promo-discount-aaa',
             'total' => '15',
-            'tax_rate' => '21',
-            'includes_vat' => true,
             'data' => json_encode([]),
         ], $values), ['order_id' => $orderId]);
+    }
+
+    public function createLineDiscount(string $orderId = 'order-aaa', string $lineId = 'order-aaa:line-aaa', string $discountId = 'discount-aaa', array $values = []): Discount
+    {
+        return $this->createDiscount(
+            $orderId,
+            $discountId,
+            array_merge([
+                'discountable_type' => DiscountableType::line->value,
+                'discountable_id' => $lineId,
+            ], $values)
+        );
+    }
+
+    public function createShippingDiscount(string $orderId = 'order-aaa', string $shippingId = 'order-aaa:shipping-aaa', string $discountId = 'discount-aaa', array $values = []): Discount
+    {
+        return $this->createDiscount(
+            $orderId,
+            $discountId,
+            array_merge([
+                'discountable_type' => DiscountableType::shipping->value,
+                'discountable_id' => $shippingId,
+            ], $values)
+        );
+    }
+
+    public function createPaymentDiscount(string $orderId = 'order-aaa', string $paymentId = 'order-aaa:payment-aaa', string $discountId = 'discount-aaa', array $values = []): Discount
+    {
+        return $this->createDiscount(
+            $orderId,
+            $discountId,
+            array_merge([
+                'discountable_type' => DiscountableType::payment->value,
+                'discountable_id' => $paymentId,
+            ], $values)
+        );
     }
 
     public function createPromo(string $promoId = 'promo-aaa', array $values = [], array $discountValues = []): Promo

@@ -120,6 +120,11 @@ class CatalogContext extends TraderContext
 
         $this->saveTaxonomy($taxonomy);
 
+        // Clear all these default events
+        if (! $this->keepDomainEvents) {
+            $taxonomy->releaseEvents();
+        }
+
         return $taxonomy;
     }
 
@@ -135,6 +140,11 @@ class CatalogContext extends TraderContext
 
         $this->saveTaxon($taxon);
 
+        // Clear all these default events
+        if (! $this->keepDomainEvents) {
+            $taxon->releaseEvents();
+        }
+
         return $taxon;
     }
 
@@ -148,6 +158,11 @@ class CatalogContext extends TraderContext
         }
 
         $this->createVariant($product, $variantId);
+
+        // Clear all these default events
+        if (! $this->keepDomainEvents) {
+            $product->releaseEvents();
+        }
 
         return $product;
     }
