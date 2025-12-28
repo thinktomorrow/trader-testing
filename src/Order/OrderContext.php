@@ -54,7 +54,6 @@ use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethod;
 use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethodProviderId;
 use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethodState;
 use Thinktomorrow\Trader\Domain\Model\Promo\Condition;
-use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\PercentageOffDiscount;
 use Thinktomorrow\Trader\Domain\Model\Promo\Promo;
 use Thinktomorrow\Trader\Domain\Model\Promo\PromoState;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfile;
@@ -223,7 +222,7 @@ class OrderContext extends TraderContext
         $this->addShopperToOrder($order, $this->createShopper($orderId, 'shopper-aaa'));
 
         // Discount
-        $this->addDiscountToOrder($order, $this->createDiscount($orderId, 'discount-aaa'));
+        $this->addDiscountToOrder($order, $this->createOrderDiscount($orderId, 'discount-aaa'));
 
         // Clear all these default events
         $order->releaseEvents();
@@ -283,8 +282,8 @@ class OrderContext extends TraderContext
         return Line::fromMappedData(array_merge([
             'line_id' => $orderId.':'.$lineId,
             'variant_id' => 'variant-aaa',
-            'unit_price_incl' => '83',
-            'unit_price_excl' => '100',
+            'unit_price_excl' => '83',
+            'unit_price_incl' => '100',
             'total_excl' => '83',
             'total_incl' => '100',
             'total_vat' => '17',
@@ -446,7 +445,7 @@ class OrderContext extends TraderContext
         return $order;
     }
 
-    public function createDiscount(string $orderId = 'order-aaa', string $discountId = 'discount-aaa', array $values = []): Discount
+    public function createOrderDiscount(string $orderId = 'order-aaa', string $discountId = 'discount-aaa', array $values = []): Discount
     {
         return Discount::fromMappedData(array_merge([
             'discount_id' => $orderId.':'.$discountId,
@@ -461,7 +460,7 @@ class OrderContext extends TraderContext
 
     public function createLineDiscount(string $orderId = 'order-aaa', string $lineId = 'order-aaa:line-aaa', string $discountId = 'discount-aaa', array $values = []): Discount
     {
-        return $this->createDiscount(
+        return $this->createOrderDiscount(
             $orderId,
             $discountId,
             array_merge([
@@ -473,7 +472,7 @@ class OrderContext extends TraderContext
 
     public function createShippingDiscount(string $orderId = 'order-aaa', string $shippingId = 'order-aaa:shipping-aaa', string $discountId = 'discount-aaa', array $values = []): Discount
     {
-        return $this->createDiscount(
+        return $this->createOrderDiscount(
             $orderId,
             $discountId,
             array_merge([
@@ -485,7 +484,7 @@ class OrderContext extends TraderContext
 
     public function createPaymentDiscount(string $orderId = 'order-aaa', string $paymentId = 'order-aaa:payment-aaa', string $discountId = 'discount-aaa', array $values = []): Discount
     {
-        return $this->createDiscount(
+        return $this->createOrderDiscount(
             $orderId,
             $discountId,
             array_merge([
@@ -495,7 +494,7 @@ class OrderContext extends TraderContext
         );
     }
 
-    public function createPromo(string $promoId = 'promo-aaa', array $values = [], array $discountValues = []): Promo
+    public function createPromo(string $promoId = 'promo-aaa', array $values = [], array $discounts = []): Promo
     {
         $model = Promo::fromMappedData(array_merge([
             'promo_id' => $promoId,
@@ -506,25 +505,35 @@ class OrderContext extends TraderContext
             'end_at' => null,
             'data' => json_encode([]),
         ], $values), [
-            \Thinktomorrow\Trader\Domain\Model\Promo\Discount::class => [
-                PercentageOffDiscount::fromMappedData(array_merge([
-                    'discount_id' => 'promo-discount-aaa',
-                    'description' => '15% off',
-                    'discount_type' => 'percentage',
-                    'data' => json_encode([
-                        'percentage' => '15',
-                    ]),
-                ], $discountValues), [
-                    'promo_id' => $promoId,
-                ], [
-                    Condition::class => [],
-                ]),
-            ],
+            \Thinktomorrow\Trader\Domain\Model\Promo\Discount::class => $discounts,
         ]);
 
         if ($this->persist) {
             $this->orderRepos->promoRepository()->save($model);
         }
+
+        return $model;
+    }
+
+    public function createPromoDiscount(string $promoId = 'promo-aaa', string $promoDiscountId = 'promo-discount-aaa', string $key = 'percentage_off', array $values = [], array $conditions = []): \Thinktomorrow\Trader\Domain\Model\Promo\Discount
+    {
+        $discountFactory = $this->orderRepos->discountFactory();
+
+        $discountClass = $discountFactory->findMappable($key);
+
+        $model = $discountClass::fromMappedData(array_merge([
+            'discount_id' => 'promo-discount-aaa',
+            'description' => '15% off',
+            'discount_type' => 'percentage',
+            'data' => json_encode([
+                'percentage' => '15',
+            ]),
+        ], $values), [
+            'promo_id' => $promoId,
+        ], [
+            // Currently only one condition supported...
+            Condition::class => $conditions,
+        ]);
 
         return $model;
     }

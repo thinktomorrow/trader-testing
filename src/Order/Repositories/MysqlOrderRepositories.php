@@ -19,6 +19,7 @@ use Thinktomorrow\Trader\Domain\Model\Promo\ConditionFactory;
 use Thinktomorrow\Trader\Domain\Model\Promo\Conditions\MinimumLinesQuantity;
 use Thinktomorrow\Trader\Domain\Model\Promo\DiscountFactory;
 use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\FixedAmountDiscount;
+use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\PercentageOffDiscount;
 use Thinktomorrow\Trader\Domain\Model\Promo\PromoRepository;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfileRepository;
 use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
@@ -47,9 +48,7 @@ class MysqlOrderRepositories implements OrderRepositories
         $this->container = $container;
     }
 
-    public static function clear(): void
-    {
-    }
+    public static function clear(): void {}
 
     public function countryRepository(): CountryRepository
     {
@@ -66,21 +65,31 @@ class MysqlOrderRepositories implements OrderRepositories
         return new MysqlCustomerLoginRepository;
     }
 
-    public function promoRepository(): PromoRepository
+    public function discountFactory(): DiscountFactory
     {
-        $discountFactory = new DiscountFactory([
+        return new DiscountFactory([
             FixedAmountDiscount::class,
-            PercentageOffOrderDiscount::class,
+            PercentageOffDiscount::class,
         ], new ConditionFactory([
             MinimumLinesQuantity::class,
         ]));
+    }
 
-        $orderDiscountFactory = new OrderDiscountFactory([
+    public function orderDiscountFactory(): OrderDiscountFactory
+    {
+        return new OrderDiscountFactory([
             FixedAmountOrderDiscount::class,
             PercentageOffOrderDiscount::class,
         ], new OrderConditionFactory([
             \Thinktomorrow\Trader\Application\Promo\OrderPromo\Conditions\MinimumLinesQuantityOrderCondition::class,
         ]));
+    }
+
+    public function promoRepository(): PromoRepository
+    {
+        $discountFactory = $this->discountFactory();
+
+        $orderDiscountFactory = $this->orderDiscountFactory();
 
         return new MysqlPromoRepository($discountFactory, $orderDiscountFactory);
     }

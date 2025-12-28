@@ -17,7 +17,7 @@
     "php": "^8.4",
     "phpunit/phpunit": "^11",
     "phpstan/phpstan": "^2.1.17",
-    "thinktomorrow/trader" : "dev-taxonomy",
+    "thinktomorrow/trader" : "dev-taxonomy@dev",
       "laravel/pint": "1.24"
   }
 }
