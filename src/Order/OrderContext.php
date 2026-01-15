@@ -34,7 +34,7 @@ use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderShipping;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderShippingAddress;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderShopper;
 use Thinktomorrow\Trader\Application\Product\Grid\GridItem;
-use Thinktomorrow\Trader\Application\Promo\OrderPromo\ApplyPromoToOrder;
+use Thinktomorrow\Trader\Application\Promo\ApplyPromoToOrder;
 use Thinktomorrow\Trader\Application\VatNumber\VatNumberApplication;
 use Thinktomorrow\Trader\Application\VatNumber\VatNumberValidator;
 use Thinktomorrow\Trader\Domain\Common\Email;
@@ -357,8 +357,8 @@ class OrderContext extends TraderContext
             'reduced_from_stock' => false,
             'data' => json_encode([
                 'product_id' => 'product-aaa',
-                'unit_price_excluding_vat' => '83',
-                'unit_price_including_vat' => '100',
+                'unit_price_excl' => '83',
+                'unit_price_incl' => '100',
                 'title' => ['nl' => $lineId.' title nl', 'fr' => $lineId.' title fr'],
             ]),
         ], $values), [
@@ -512,6 +512,14 @@ class OrderContext extends TraderContext
         return $order;
     }
 
+    public function createSalePriceSystemPromo(): void
+    {
+        $this->apps()->promoApplication()->createSalePriceSystemPromo();
+
+        // Clear sale price event to not interfere with tests
+        $this->eventDispatcher->releaseDispatchedEvents();
+    }
+
     public function createOrderDiscount(string $orderId = 'order-aaa', string $discountId = 'discount-aaa', array $values = []): Discount
     {
         return Discount::fromMappedData(array_merge([
@@ -520,7 +528,9 @@ class OrderContext extends TraderContext
             'discountable_id' => $orderId,
             'promo_id' => 'promo-aaa',
             'promo_discount_id' => 'promo-discount-aaa',
-            'total' => '15',
+            'total_excl' => '15',
+            'vat_rate' => null, // Vat rate and total_incl are given for line discounts
+            'total_incl' => null,
             'data' => json_encode([]),
         ], $values), ['order_id' => $orderId]);
     }
@@ -533,6 +543,9 @@ class OrderContext extends TraderContext
             array_merge([
                 'discountable_type' => DiscountableType::line->value,
                 'discountable_id' => $lineId,
+                'total_excl' => '15',
+                'vat_rate' => '21',
+                'total_incl' => '18',
             ], $values)
         );
     }
@@ -568,6 +581,7 @@ class OrderContext extends TraderContext
             'coupon_code' => 'PROMO123',
             'state' => PromoState::online->value,
             'is_combinable' => false,
+            'is_system_promo' => false,
             'start_at' => null,
             'end_at' => null,
             'data' => json_encode([]),

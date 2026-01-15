@@ -6,6 +6,7 @@ use Psr\Container\ContainerInterface;
 use Thinktomorrow\Trader\Application\Cart\Read\CartRepository;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderRepository;
+use Thinktomorrow\Trader\Application\Promo\LinePromo\Discounts\SalePriceLineDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\Discounts\FixedAmountOrderDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\Discounts\PercentageOffOrderDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\OrderConditionFactory;
@@ -22,6 +23,7 @@ use Thinktomorrow\Trader\Domain\Model\Promo\Conditions\MinimumLinesQuantity;
 use Thinktomorrow\Trader\Domain\Model\Promo\DiscountFactory;
 use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\FixedAmountDiscount;
 use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\PercentageOffDiscount;
+use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\SalePriceSystemDiscount;
 use Thinktomorrow\Trader\Domain\Model\Promo\PromoRepository;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfileRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlCartRepository;
@@ -68,6 +70,7 @@ class MysqlOrderRepositories implements OrderRepositories
     public function discountFactory(): DiscountFactory
     {
         return new DiscountFactory([
+            SalePriceSystemDiscount::class,
             FixedAmountDiscount::class,
             PercentageOffDiscount::class,
         ], new ConditionFactory([
@@ -78,6 +81,7 @@ class MysqlOrderRepositories implements OrderRepositories
     public function orderDiscountFactory(): OrderDiscountFactory
     {
         return new OrderDiscountFactory([
+            SalePriceLineDiscount::class,
             FixedAmountOrderDiscount::class,
             PercentageOffOrderDiscount::class,
         ], new OrderConditionFactory([

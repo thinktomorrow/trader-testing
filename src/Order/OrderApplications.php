@@ -11,9 +11,9 @@ use Thinktomorrow\Trader\Application\Cart\RefreshCart\RefreshCartAction;
 use Thinktomorrow\Trader\Application\Cart\ShippingProfile\UpdateShippingProfileOnOrder;
 use Thinktomorrow\Trader\Application\Order\Merchant\MerchantOrderApplication;
 use Thinktomorrow\Trader\Application\Order\State\OrderStateApplication;
+use Thinktomorrow\Trader\Application\Promo\ApplyPromoToOrder;
 use Thinktomorrow\Trader\Application\Promo\Coupon\CouponPromoApplication;
 use Thinktomorrow\Trader\Application\Promo\CUD\PromoApplication;
-use Thinktomorrow\Trader\Application\Promo\OrderPromo\ApplyPromoToOrder;
 use Thinktomorrow\Trader\Application\VatNumber\VatNumberApplication;
 use Thinktomorrow\Trader\Application\VatNumber\VatNumberValidator;
 use Thinktomorrow\Trader\Application\VatRate\FindVatRateForOrder;
@@ -149,6 +149,7 @@ class OrderApplications
             new ApplyPromoToOrder(
                 $this->repos->orderRepository(),
             ),
+            $this->container,
         );
     }
 

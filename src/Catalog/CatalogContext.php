@@ -9,8 +9,6 @@ use Thinktomorrow\Trader\Application\Product\VariantLinks\VariantLink;
 use Thinktomorrow\Trader\Application\Taxon\Tree\TaxonNode;
 use Thinktomorrow\Trader\Application\Taxonomy\TaxonomyItem;
 use Thinktomorrow\Trader\Domain\Common\Locale;
-use Thinktomorrow\Trader\Domain\Common\Vat\VatPercentage;
-use Thinktomorrow\Trader\Domain\Model\Order\Discount\DiscountPriceDefaults;
 use Thinktomorrow\Trader\Domain\Model\Product\Personalisation\Personalisation;
 use Thinktomorrow\Trader\Domain\Model\Product\Personalisation\PersonalisationId;
 use Thinktomorrow\Trader\Domain\Model\Product\Personalisation\PersonalisationType;
@@ -75,9 +73,6 @@ class CatalogContext extends TraderContext
         $container->add(TaxonomyItem::class, DefaultTaxonomyItem::class);
         $container->add(TaxonNode::class, DefaultTaxonNode::class);
         $container->add(VariantLink::class, DefaultVariantLink::class);
-
-        DiscountPriceDefaults::setDiscountTaxRate(VatPercentage::fromString('21'));
-        DiscountPriceDefaults::setDiscountIncludeTax(true);
     }
 
     public static function tearDown(): void
