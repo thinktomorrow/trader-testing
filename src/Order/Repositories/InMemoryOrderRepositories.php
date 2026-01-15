@@ -6,23 +6,26 @@ use Psr\Container\ContainerInterface;
 use Thinktomorrow\Trader\Application\Cart\Read\CartRepository;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderRepository;
+use Thinktomorrow\Trader\Application\Promo\OrderPromo\Conditions\MinimumAmountOrderCondition;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\Discounts\FixedAmountOrderDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\Discounts\PercentageOffOrderDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\OrderConditionFactory;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\OrderDiscountFactory;
+use Thinktomorrow\Trader\Application\Promo\OrderPromo\OrderPromoRepository;
 use Thinktomorrow\Trader\Domain\Model\Country\CountryRepository;
 use Thinktomorrow\Trader\Domain\Model\Customer\CustomerRepository;
 use Thinktomorrow\Trader\Domain\Model\CustomerLogin\CustomerLoginRepository;
+use Thinktomorrow\Trader\Domain\Model\Order\Invoice\InvoiceRepository;
 use Thinktomorrow\Trader\Domain\Model\Order\OrderRepository;
 use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethodRepository;
 use Thinktomorrow\Trader\Domain\Model\Promo\ConditionFactory;
+use Thinktomorrow\Trader\Domain\Model\Promo\Conditions\MinimumAmount;
 use Thinktomorrow\Trader\Domain\Model\Promo\Conditions\MinimumLinesQuantity;
 use Thinktomorrow\Trader\Domain\Model\Promo\DiscountFactory;
 use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\FixedAmountDiscount;
 use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\PercentageOffDiscount;
 use Thinktomorrow\Trader\Domain\Model\Promo\PromoRepository;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfileRepository;
-use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryCartRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryCountryRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryCustomerLoginRepository;
@@ -77,6 +80,7 @@ class InMemoryOrderRepositories implements OrderRepositories
             FixedAmountDiscount::class,
             PercentageOffDiscount::class,
         ], new ConditionFactory([
+            MinimumAmount::class,
             MinimumLinesQuantity::class,
         ]));
     }
@@ -87,6 +91,7 @@ class InMemoryOrderRepositories implements OrderRepositories
             FixedAmountOrderDiscount::class,
             PercentageOffOrderDiscount::class,
         ], new OrderConditionFactory([
+            MinimumAmountOrderCondition::class,
             \Thinktomorrow\Trader\Application\Promo\OrderPromo\Conditions\MinimumLinesQuantityOrderCondition::class,
         ]));
     }
@@ -98,6 +103,11 @@ class InMemoryOrderRepositories implements OrderRepositories
         $orderDiscountFactory = $this->orderDiscountFactory();
 
         return new InMemoryPromoRepository($discountFactory, $orderDiscountFactory);
+    }
+
+    public function orderPromoRepository(): OrderPromoRepository
+    {
+        return $this->promoRepository();
     }
 
     public function cartRepository(): CartRepository
@@ -130,8 +140,8 @@ class InMemoryOrderRepositories implements OrderRepositories
         return new InMemoryShippingProfileRepository;
     }
 
-    public function vatRateRepository(): VatRateRepository
+    public function invoiceRepository(): InvoiceRepository
     {
-        return new InMemoryVatRateRepository($this->config);
+        return new InMemoryOrderRepository;
     }
 }

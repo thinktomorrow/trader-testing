@@ -7,6 +7,15 @@
       "Thinktomorrow\\Trader\\Testing\\": "src/"
     }
   },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../trader",
+            "options": {
+                "symLink": true
+            }
+        }
+    ],
   "autoload-dev": {
     "psr-4": {
       "Tests\\": "tests/"
@@ -17,7 +26,7 @@
     "php": "^8.4",
     "phpunit/phpunit": "^11",
     "phpstan/phpstan": "^2.1.17",
-    "thinktomorrow/trader" : "dev-taxonomy@dev",
+    "thinktomorrow/trader" : "dev-taxonomy-with-better-totals@dev",
       "laravel/pint": "1.24"
   }
 }

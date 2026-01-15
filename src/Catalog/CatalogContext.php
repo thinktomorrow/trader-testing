@@ -5,6 +5,7 @@ namespace Thinktomorrow\Trader\Testing\Catalog;
 use Thinktomorrow\Trader\Application\Product\ProductDetail\ProductDetail;
 use Thinktomorrow\Trader\Application\Product\Taxa\ProductTaxonItem;
 use Thinktomorrow\Trader\Application\Product\Taxa\VariantTaxonItem;
+use Thinktomorrow\Trader\Application\Product\VariantLinks\VariantLink;
 use Thinktomorrow\Trader\Application\Taxon\Tree\TaxonNode;
 use Thinktomorrow\Trader\Application\Taxonomy\TaxonomyItem;
 use Thinktomorrow\Trader\Domain\Common\Locale;
@@ -19,21 +20,22 @@ use Thinktomorrow\Trader\Domain\Model\Product\ProductState;
 use Thinktomorrow\Trader\Domain\Model\Product\ProductTaxa\ProductTaxon;
 use Thinktomorrow\Trader\Domain\Model\Product\Variant\Variant;
 use Thinktomorrow\Trader\Domain\Model\Product\Variant\VariantId;
-use Thinktomorrow\Trader\Domain\Model\Product\Variant\VariantSalePrice;
-use Thinktomorrow\Trader\Domain\Model\Product\Variant\VariantUnitPrice;
+use Thinktomorrow\Trader\Domain\Model\Product\Variant\VariantState;
 use Thinktomorrow\Trader\Domain\Model\Product\VariantTaxa\VariantTaxon;
 use Thinktomorrow\Trader\Domain\Model\Taxon\Taxon;
 use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonId;
 use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonKey;
 use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonKeyId;
+use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonState;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\Taxonomy;
-use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyId;
+use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyState;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyType;
 use Thinktomorrow\Trader\Infrastructure\Laravel\config\TraderConfig;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultProductDetail;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultProductTaxonItem;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultTaxonNode;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultTaxonomyItem;
+use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultVariantLink;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultVariantTaxonItem;
 use Thinktomorrow\Trader\Infrastructure\Test\TestContainer;
 use Thinktomorrow\Trader\Infrastructure\Test\TestTraderConfig;
@@ -53,23 +55,26 @@ class CatalogContext extends TraderContext
         $this->catalogRepos = $catalogRepos;
     }
 
-    public function catalogRepos(): CatalogRepositories
+    public function repos(): CatalogRepositories
     {
         return $this->catalogRepos;
     }
 
-    public function catalogApps(): CatalogApplications
+    public function apps(): CatalogApplications
     {
         return new CatalogApplications($this->catalogRepos, $this->config, $this->eventDispatcher);
     }
 
     public static function setUp(): void
     {
-        (new TestContainer)->add(ProductDetail::class, DefaultProductDetail::class);
-        (new TestContainer)->add(ProductTaxonItem::class, DefaultProductTaxonItem::class);
-        (new TestContainer)->add(VariantTaxonItem::class, DefaultVariantTaxonItem::class);
-        (new TestContainer)->add(TaxonomyItem::class, DefaultTaxonomyItem::class);
-        (new TestContainer)->add(TaxonNode::class, DefaultTaxonNode::class);
+        $container = new TestContainer;
+
+        $container->add(ProductDetail::class, DefaultProductDetail::class);
+        $container->add(ProductTaxonItem::class, DefaultProductTaxonItem::class);
+        $container->add(VariantTaxonItem::class, DefaultVariantTaxonItem::class);
+        $container->add(TaxonomyItem::class, DefaultTaxonomyItem::class);
+        $container->add(TaxonNode::class, DefaultTaxonNode::class);
+        $container->add(VariantLink::class, DefaultVariantLink::class);
 
         DiscountPriceDefaults::setDiscountTaxRate(VatPercentage::fromString('21'));
         DiscountPriceDefaults::setDiscountIncludeTax(true);
@@ -91,12 +96,12 @@ class CatalogContext extends TraderContext
 
     public static function inMemory(): self
     {
-        return new self(new InMemoryCatalogRepositories(new TestTraderConfig));
+        return new self(new InMemoryCatalogRepositories(new TestTraderConfig, new TestContainer));
     }
 
     public static function mysql(): self
     {
-        return new self(new MysqlCatalogRepositories(new TestContainer));
+        return new self(new MysqlCatalogRepositories(new TestTraderConfig, new TestContainer));
     }
 
     public static function laravel(): self
@@ -104,7 +109,7 @@ class CatalogContext extends TraderContext
         $config = app(TraderConfig::class);
         $container = app();
 
-        $context = new self(new MysqlCatalogRepositories($container));
+        $context = new self(new MysqlCatalogRepositories($config, $container));
 
         $context->setConfig($config);
         $context->setContainer($container);
@@ -112,11 +117,19 @@ class CatalogContext extends TraderContext
         return $context;
     }
 
-    public function createTaxonomy(string $taxonomyId = 'taxonomy-aaa', string $type = TaxonomyType::category->value): Taxonomy
+    public function createTaxonomy(string $taxonomyId = 'taxonomy-aaa', string $type = TaxonomyType::category->value, array $values = []): Taxonomy
     {
-        $taxonomy = Taxonomy::create(TaxonomyId::fromString($taxonomyId), TaxonomyType::from($type));
-        $taxonomy->showAsGridFilter();
-        $taxonomy->addData(['title' => ['nl' => $taxonomyId.' title nl', 'fr' => $taxonomyId.' title fr']]);
+        $taxonomy = Taxonomy::fromMappedData(array_merge([
+            'taxonomy_id' => $taxonomyId,
+            'type' => $type,
+            'state' => TaxonomyState::online->value,
+            'shows_as_grid_filter' => true,
+            'shows_in_grid' => true,
+            'allows_multiple_values' => false,
+            'allows_nestable_values' => false,
+            'order' => 0,
+            'data' => json_encode(['title' => ['nl' => $taxonomyId.' title nl', 'fr' => $taxonomyId.' title fr']]),
+        ], $values));
 
         $this->saveTaxonomy($taxonomy);
 
@@ -128,9 +141,18 @@ class CatalogContext extends TraderContext
         return $taxonomy;
     }
 
-    public function createTaxon(string $taxonId = 'taxon-aaa', string $taxonomyId = 'taxonomy-aaa', ?string $parentId = null): Taxon
+    public function createTaxon(string $taxonId = 'taxon-aaa', string $taxonomyId = 'taxonomy-aaa', ?string $parentId = null, array $values = []): Taxon
     {
-        $taxon = Taxon::create(TaxonId::fromString($taxonId), TaxonomyId::fromString($taxonomyId), $parentId ? TaxonId::fromString($parentId) : null);
+        $taxon = Taxon::fromMappedData(array_merge([
+            'taxon_id' => $taxonId,
+            'taxonomy_id' => $taxonomyId,
+            'parent_id' => $parentId,
+            'state' => TaxonState::online->value,
+            'data' => json_encode([]),
+        ], $values), [
+            TaxonKey::class => [],
+        ]);
+
         $taxon->addData(['title' => ['nl' => $taxonId.' title nl', 'fr' => $taxonId.' title fr']]);
 
         $taxon->updateTaxonKeys([
@@ -148,16 +170,26 @@ class CatalogContext extends TraderContext
         return $taxon;
     }
 
-    public function createProduct(string $productId = 'product-aaa', string $variantId = 'variant-aaa'): Product
+    public function createProduct(string $productId = 'product-aaa', ?string $variantId = 'variant-aaa', array $values = [], array $data = []): Product
     {
-        $product = Product::create(ProductId::fromString($productId));
-        $product->updateState(ProductState::online);
+        $product = Product::fromMappedData(array_merge([
+            'product_id' => $productId,
+            'state' => ProductState::online->value,
+            'data' => json_encode(array_merge([
+                'title' => ['nl' => $productId.' title nl', 'fr' => $productId.' title fr'],
+            ], $data)),
+        ], $values), [
+            ProductTaxon::class => [],
+            Personalisation::class => [],
+        ]);
 
         if ($this->persist) {
             $this->saveProduct($product);
         }
 
-        $this->createVariant($product, $variantId);
+        if ($variantId) {
+            $this->createVariant($product, $variantId);
+        }
 
         // Clear all these default events
         if (! $this->keepDomainEvents) {
@@ -167,24 +199,39 @@ class CatalogContext extends TraderContext
         return $product;
     }
 
-    public function createVariant(string|Product $productId = 'product-aaa', string $variantId = 'variant-aaa'): Variant
+    public function createVariant(string|Product $productId = 'product-aaa', string $variantId = 'variant-aaa', array $values = [], array $data = []): Variant
     {
         $product = $productId instanceof Product ? $productId : $this->catalogRepos->productRepository()->find(ProductId::fromString($productId));
 
-        $variant = Variant::create(
-            $product->productId,
-            VariantId::fromString($variantId),
-            VariantUnitPrice::fromScalars(100, '20', false),
-            VariantSalePrice::fromScalars(80, '20', false),
-            'sku-'.$variantId
-        );
-
-        $variant->showInGrid();
+        $variant = Variant::fromMappedData(array_merge([
+            'product_id' => $product->productId->get(),
+            'variant_id' => $variantId,
+            'unit_price' => 100,
+            'sale_price' => 80,
+            'tax_rate' => '20',
+            'includes_vat' => false,
+            'sku' => 'sku-'.$variantId,
+            'state' => VariantState::available->value,
+            'show_in_grid' => true,
+            'data' => json_encode(array_merge([
+                'title' => ['nl' => $variantId.' title nl', 'fr' => $variantId.' title fr'],
+                'option_title' => ['nl' => $variantId.' option title nl', 'fr' => $variantId.' option title fr'],
+            ], $data)),
+        ], $values), [
+            'product_id' => $product->productId->get(),
+        ], [
+            VariantTaxon::class => [],
+        ]);
 
         $product->createVariant($variant);
 
         if ($this->persist) {
             $this->saveProduct($product);
+        }
+
+        // Clear all these default events
+        if (! $this->keepDomainEvents) {
+            $product->releaseEvents();
         }
 
         return $variant;
@@ -205,12 +252,13 @@ class CatalogContext extends TraderContext
         $this->catalogRepos->productRepository()->save($product);
     }
 
-    public function linkProductToTaxon(string|Product $productId, string|Taxon $taxonId): Product
+    public function linkProductToTaxon(string|Product $productId, string|Taxon $taxonId, array $data = []): Product
     {
         $product = $productId instanceof Product ? $productId : $this->catalogRepos->productRepository()->find(ProductId::fromString($productId));
         $taxon = $taxonId instanceof Taxon ? $taxonId : $this->catalogRepos->taxonRepository()->find(TaxonId::fromString($taxonId));
 
         $productTaxon = ProductTaxon::create($product->productId, $taxon->taxonId);
+        $productTaxon->addData($data);
 
         // If taxonomy is of type variant_property, we need to set the relation as a VariantTaxon instead of default ProductTaxon
         $taxonomy = $this->catalogRepos->taxonomyRepository()->find($taxon->taxonomyId);
@@ -230,14 +278,17 @@ class CatalogContext extends TraderContext
         return $product;
     }
 
-    public function linkVariantToTaxon(string $productId, string $variantId, string $taxonId): Product
+    public function linkVariantToTaxon(string $productId, string $variantId, string $taxonId, array $data = []): Product
     {
         $product = $this->catalogRepos->productRepository()->find(ProductId::fromString($productId));
         $variant = $product->findVariant(VariantId::fromString($variantId));
 
+        $variantTaxon = VariantTaxon::create(VariantId::fromString($variantId), TaxonId::fromString($taxonId));
+        $variantTaxon->addData($data);
+
         $variant->updateVariantTaxa([
             ...$variant->getVariantTaxa(),
-            VariantTaxon::create(VariantId::fromString($variantId), TaxonId::fromString($taxonId)),
+            $variantTaxon,
         ]);
 
         if ($this->persist) {
@@ -291,5 +342,17 @@ class CatalogContext extends TraderContext
             $this->linkProductToTaxon($this->createProduct(), $taxon),
             $this->linkProductToTaxon($this->linkProductToTaxon($this->createProduct(), $taxon2), $taxon),
         ];
+    }
+
+    public function findProduct(string|ProductId $productId): Product
+    {
+        $productId = is_string($productId) ? ProductId::fromString($productId) : $productId;
+
+        return $this->catalogRepos->productRepository()->find($productId);
+    }
+
+    public function findProductDetail(VariantId $variantId): ProductDetail
+    {
+        return $this->catalogRepos->productDetailRepository()->findProductDetail($variantId);
     }
 }

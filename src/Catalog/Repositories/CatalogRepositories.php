@@ -4,7 +4,9 @@ namespace Thinktomorrow\Trader\Testing\Catalog\Repositories;
 
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
 use Thinktomorrow\Trader\Application\Product\Grid\FlattenedTaxonIds;
+use Thinktomorrow\Trader\Application\Product\Grid\GridRepository;
 use Thinktomorrow\Trader\Application\Product\ProductDetail\ProductDetailRepository;
+use Thinktomorrow\Trader\Application\Product\VariantLinks\VariantLinksComposer;
 use Thinktomorrow\Trader\Application\Taxon\Queries\TaxaSelectOptions;
 use Thinktomorrow\Trader\Application\Taxon\Queries\TaxonFilters;
 use Thinktomorrow\Trader\Application\Taxon\Redirect\TaxonRedirectRepository;
@@ -25,11 +27,15 @@ interface CatalogRepositories
 
     public function productRepository(): ProductRepository;
 
+    public function gridRepository(): GridRepository;
+
     public function productDetailRepository(): ProductDetailRepository;
 
     public function variantRepository(): VariantRepository;
 
     public function variantForCartRepository(): VariantForCartRepository;
+
+    public function variantLinksComposer(): VariantLinksComposer;
 
     public function taxonRedirectRepository(): TaxonRedirectRepository;
 

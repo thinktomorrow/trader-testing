@@ -13,14 +13,14 @@ class OrderTest extends \PHPUnit\Framework\TestCase
     {
         $order = \Thinktomorrow\Trader\Testing\Order\OrderContext::inMemory();
 
-        $this->assertInstanceOf(\Thinktomorrow\Trader\Testing\Order\Repositories\OrderRepositories::class, $order->orderRepos());
+        $this->assertInstanceOf(\Thinktomorrow\Trader\Testing\Order\Repositories\OrderRepositories::class, $order->repos());
     }
 
     public function test_it_can_call_in_memory_apps(): void
     {
         $order = \Thinktomorrow\Trader\Testing\Order\OrderContext::inMemory();
 
-        $this->assertInstanceOf(\Thinktomorrow\Trader\Testing\Order\OrderApplications::class, $order->orderApps());
+        $this->assertInstanceOf(\Thinktomorrow\Trader\Testing\Order\OrderApplications::class, $order->apps());
     }
 
     public function test_it_can_setup_mysql_order(): void
@@ -34,13 +34,13 @@ class OrderTest extends \PHPUnit\Framework\TestCase
     {
         $order = \Thinktomorrow\Trader\Testing\Order\OrderContext::mysql();
 
-        $this->assertInstanceOf(\Thinktomorrow\Trader\Testing\Order\Repositories\OrderRepositories::class, $order->orderRepos());
+        $this->assertInstanceOf(\Thinktomorrow\Trader\Testing\Order\Repositories\OrderRepositories::class, $order->repos());
     }
 
     public function test_it_can_call_mysql_apps(): void
     {
         $order = \Thinktomorrow\Trader\Testing\Order\OrderContext::mysql();
 
-        $this->assertInstanceOf(\Thinktomorrow\Trader\Testing\Order\OrderApplications::class, $order->orderApps());
+        $this->assertInstanceOf(\Thinktomorrow\Trader\Testing\Order\OrderApplications::class, $order->apps());
     }
 }

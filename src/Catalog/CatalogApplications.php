@@ -5,6 +5,9 @@ namespace Thinktomorrow\Trader\Testing\Catalog;
 use Thinktomorrow\Trader\Application\Product\ProductApplication;
 use Thinktomorrow\Trader\Application\Taxon\TaxonApplication;
 use Thinktomorrow\Trader\Application\Taxonomy\TaxonomyApplication;
+use Thinktomorrow\Trader\Application\VatRate\Allocator\ProRateAllocator;
+use Thinktomorrow\Trader\Application\VatRate\Allocator\VatAllocator;
+use Thinktomorrow\Trader\Application\VatRate\VatRateApplication;
 use Thinktomorrow\Trader\Domain\Common\Event\EventDispatcher;
 use Thinktomorrow\Trader\Testing\Catalog\Repositories\CatalogRepositories;
 use Thinktomorrow\Trader\TraderConfig;
@@ -24,6 +27,11 @@ class CatalogApplications
         $this->eventDispatcher = $eventDispatcher;
     }
 
+    public function getEventDispatcher(): EventDispatcher
+    {
+        return $this->eventDispatcher;
+    }
+
     public function taxonomyApplication(): TaxonomyApplication
     {
         return new TaxonomyApplication(
@@ -36,7 +44,6 @@ class CatalogApplications
     public function taxonApplication(): TaxonApplication
     {
         return new TaxonApplication(
-            $this->config,
             $this->eventDispatcher,
             $this->repos->taxonRepository(),
         );
@@ -51,6 +58,21 @@ class CatalogApplications
             $this->repos->variantRepository(),
             $this->repos->taxonTreeRepository(),
             $this->repos->taxonomyRepository(),
+        );
+    }
+
+    public function vatRateApplication(): VatRateApplication
+    {
+        return new VatRateApplication(
+            $this->eventDispatcher,
+            $this->repos->vatRateRepository(),
+        );
+    }
+
+    public function vatAllocator(): VatAllocator
+    {
+        return new VatAllocator(
+            new ProRateAllocator
         );
     }
 }

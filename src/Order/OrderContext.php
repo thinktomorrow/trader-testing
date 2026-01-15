@@ -2,6 +2,7 @@
 
 namespace Thinktomorrow\Trader\Testing\Order;
 
+use Thinktomorrow\Trader\Application\Cart\PaymentMethod\VerifyPaymentMethodForCart;
 use Thinktomorrow\Trader\Application\Cart\Read\Cart;
 use Thinktomorrow\Trader\Application\Cart\Read\CartBillingAddress;
 use Thinktomorrow\Trader\Application\Cart\Read\CartDiscount;
@@ -11,6 +12,13 @@ use Thinktomorrow\Trader\Application\Cart\Read\CartPayment;
 use Thinktomorrow\Trader\Application\Cart\Read\CartShipping;
 use Thinktomorrow\Trader\Application\Cart\Read\CartShippingAddress;
 use Thinktomorrow\Trader\Application\Cart\Read\CartShopper;
+use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustDiscounts;
+use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustLine;
+use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustLines;
+use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustOrderVatSnapshot;
+use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustShipping;
+use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustVatRates;
+use Thinktomorrow\Trader\Application\Cart\RefreshCart\RefreshCart;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCart;
 use Thinktomorrow\Trader\Application\Customer\Read\CustomerBillingAddress;
 use Thinktomorrow\Trader\Application\Customer\Read\CustomerRead;
@@ -25,6 +33,10 @@ use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderPayment;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderShipping;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderShippingAddress;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderShopper;
+use Thinktomorrow\Trader\Application\Product\Grid\GridItem;
+use Thinktomorrow\Trader\Application\Promo\OrderPromo\ApplyPromoToOrder;
+use Thinktomorrow\Trader\Application\VatNumber\VatNumberApplication;
+use Thinktomorrow\Trader\Application\VatNumber\VatNumberValidator;
 use Thinktomorrow\Trader\Domain\Common\Email;
 use Thinktomorrow\Trader\Domain\Model\Country\Country;
 use Thinktomorrow\Trader\Domain\Model\Country\CountryId;
@@ -44,12 +56,15 @@ use Thinktomorrow\Trader\Domain\Model\Order\OrderReference;
 use Thinktomorrow\Trader\Domain\Model\Order\Payment\DefaultPaymentState;
 use Thinktomorrow\Trader\Domain\Model\Order\Payment\Payment;
 use Thinktomorrow\Trader\Domain\Model\Order\Payment\PaymentState;
+use Thinktomorrow\Trader\Domain\Model\Order\Payment\PaymentStateMachine;
 use Thinktomorrow\Trader\Domain\Model\Order\Shipping\DefaultShippingState;
 use Thinktomorrow\Trader\Domain\Model\Order\Shipping\Shipping;
 use Thinktomorrow\Trader\Domain\Model\Order\Shipping\ShippingState;
+use Thinktomorrow\Trader\Domain\Model\Order\Shipping\ShippingStateMachine;
 use Thinktomorrow\Trader\Domain\Model\Order\Shopper;
 use Thinktomorrow\Trader\Domain\Model\Order\State\DefaultOrderState;
 use Thinktomorrow\Trader\Domain\Model\Order\State\OrderState;
+use Thinktomorrow\Trader\Domain\Model\Order\State\OrderStateMachine;
 use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethod;
 use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethodProviderId;
 use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethodState;
@@ -63,6 +78,7 @@ use Thinktomorrow\Trader\Domain\Model\VatRate\BaseRate;
 use Thinktomorrow\Trader\Domain\Model\VatRate\VatRate;
 use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateState;
 use Thinktomorrow\Trader\Infrastructure\Laravel\config\TraderConfig;
+use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultAdjustLine;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultCart;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultCartBillingAddress;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultCartDiscount;
@@ -75,6 +91,7 @@ use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultCartShopper;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\CustomerRead\DefaultCustomerBillingAddress;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\CustomerRead\DefaultCustomerRead;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\CustomerRead\DefaultCustomerShippingAddress;
+use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultGridItem;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultVariantForCart;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\MerchantOrder\DefaultMerchantOrder;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\MerchantOrder\DefaultMerchantOrderBillingAddress;
@@ -86,10 +103,15 @@ use Thinktomorrow\Trader\Infrastructure\Laravel\Models\MerchantOrder\DefaultMerc
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\MerchantOrder\DefaultMerchantOrderShipping;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\MerchantOrder\DefaultMerchantOrderShippingAddress;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\MerchantOrder\DefaultMerchantOrderShopper;
+use Thinktomorrow\Trader\Infrastructure\Laravel\Models\PaymentMethod\DefaultVerifyPaymentMethodForCart;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlOrderRepository;
+use Thinktomorrow\Trader\Infrastructure\Test\DummyVatNumberValidator;
 use Thinktomorrow\Trader\Infrastructure\Test\TestContainer;
 use Thinktomorrow\Trader\Infrastructure\Test\TestTraderConfig;
+use Thinktomorrow\Trader\Testing\Catalog\CatalogContext;
+use Thinktomorrow\Trader\Testing\Catalog\Repositories\CatalogRepositories;
 use Thinktomorrow\Trader\Testing\Catalog\Repositories\InMemoryCatalogRepositories;
+use Thinktomorrow\Trader\Testing\Catalog\Repositories\MysqlCatalogRepositories;
 use Thinktomorrow\Trader\Testing\Order\Repositories\InMemoryOrderRepositories;
 use Thinktomorrow\Trader\Testing\Order\Repositories\MysqlOrderRepositories;
 use Thinktomorrow\Trader\Testing\Order\Repositories\OrderRepositories;
@@ -97,70 +119,104 @@ use Thinktomorrow\Trader\Testing\TraderContext;
 
 class OrderContext extends TraderContext
 {
-    private OrderRepositories $orderRepos;
-
     public bool $persist = true;
 
-    public function __construct(OrderRepositories $orderRepos)
-    {
+    public function __construct(
+        private OrderRepositories $orderRepos,
+        private CatalogRepositories $catalogRepos
+    ) {
         parent::__construct();
-
-        $this->orderRepos = $orderRepos;
     }
 
-    public function orderRepos(): OrderRepositories
+    public function repos(): OrderRepositories
     {
         return $this->orderRepos;
     }
 
-    public function orderApps(): OrderApplications
+    public function apps(): OrderApplications
     {
-        return new OrderApplications($this->orderRepos, $this->config, $this->eventDispatcher);
+        return new OrderApplications(
+            $this->orderRepos,
+            $this->catalogRepos,
+            $this->config,
+            $this->container,
+            $this->eventDispatcher
+        );
     }
 
     public static function setUp(): void
     {
+        $container = new TestContainer;
+        $catalogContext = CatalogContext::inMemory();
+
         // States
-        (new TestContainer)->add(OrderState::class, DefaultOrderState::class);
-        (new TestContainer)->add(ShippingState::class, DefaultShippingState::class);
-        (new TestContainer)->add(PaymentState::class, DefaultPaymentState::class);
+        $container->add(OrderState::class, DefaultOrderState::class);
+        $container->add(ShippingState::class, DefaultShippingState::class);
+        $container->add(PaymentState::class, DefaultPaymentState::class);
+
+        $container->add(OrderStateMachine::class, new OrderStateMachine(DefaultOrderState::cases(), DefaultOrderState::getTransitions()));
+        $container->add(PaymentStateMachine::class, new PaymentStateMachine(DefaultPaymentState::cases(), DefaultPaymentState::getTransitions()));
+        $container->add(ShippingStateMachine::class, new ShippingStateMachine(DefaultShippingState::cases(), DefaultShippingState::getTransitions()));
 
         // Cart
-        (new TestContainer)->add(VariantForCart::class, DefaultVariantForCart::class);
-        (new TestContainer)->add(Cart::class, DefaultCart::class);
-        (new TestContainer)->add(CartLine::class, DefaultCartLine::class);
-        (new TestContainer)->add(CartLinePersonalisation::class, DefaultCartLinePersonalisation::class);
-        (new TestContainer)->add(CartShippingAddress::class, DefaultCartShippingAddress::class);
-        (new TestContainer)->add(CartBillingAddress::class, DefaultCartBillingAddress::class);
-        (new TestContainer)->add(CartShipping::class, DefaultCartShipping::class);
-        (new TestContainer)->add(CartPayment::class, DefaultCartPayment::class);
-        (new TestContainer)->add(CartShopper::class, DefaultCartShopper::class);
-        (new TestContainer)->add(CartDiscount::class, DefaultCartDiscount::class);
+        $container->add(VariantForCart::class, DefaultVariantForCart::class);
+        $container->add(Cart::class, DefaultCart::class);
+        $container->add(CartLine::class, DefaultCartLine::class);
+        $container->add(CartLinePersonalisation::class, DefaultCartLinePersonalisation::class);
+        $container->add(CartShippingAddress::class, DefaultCartShippingAddress::class);
+        $container->add(CartBillingAddress::class, DefaultCartBillingAddress::class);
+        $container->add(CartShipping::class, DefaultCartShipping::class);
+        $container->add(CartPayment::class, DefaultCartPayment::class);
+        $container->add(CartShopper::class, DefaultCartShopper::class);
+        $container->add(CartDiscount::class, DefaultCartDiscount::class);
+
+        $container->add(AdjustOrderVatSnapshot::class, new AdjustOrderVatSnapshot(
+            $catalogContext->apps()->vatAllocator()
+        ));
+        $container->add(AdjustLine::class, new DefaultAdjustLine);
+        $container->add(AdjustLines::class, new AdjustLines($catalogContext->repos()->variantForCartRepository(), $container->get(AdjustLine::class)));
+        $container->add(AdjustShipping::class, new AdjustShipping(static::inMemory()->apps()->updateShippingProfileOnOrder()));
+        $container->add(AdjustVatRates::class, new AdjustVatRates(
+            $catalogContext->repos()->variantForCartRepository(),
+            static::inMemory()->apps()->findVatRateForOrder()
+        ));
+        $container->add(AdjustDiscounts::class, new AdjustDiscounts(
+            static::inMemory()->repos()->orderPromoRepository(),
+            new ApplyPromoToOrder(static::inMemory()->repos()->orderRepository())
+        ));
+
+        $container->add(VerifyPaymentMethodForCart::class, new DefaultVerifyPaymentMethodForCart);
+        $container->add(VatNumberValidator::class, new DummyVatNumberValidator);
 
         // MerchantOrder
-        (new TestContainer)->add(MerchantOrder::class, DefaultMerchantOrder::class);
-        (new TestContainer)->add(MerchantOrderLine::class, DefaultMerchantOrderLine::class);
-        (new TestContainer)->add(MerchantOrderLinePersonalisation::class, DefaultMerchantOrderLinePersonalisation::class);
-        (new TestContainer)->add(MerchantOrderShippingAddress::class, DefaultMerchantOrderShippingAddress::class);
-        (new TestContainer)->add(MerchantOrderBillingAddress::class, DefaultMerchantOrderBillingAddress::class);
-        (new TestContainer)->add(MerchantOrderShipping::class, DefaultMerchantOrderShipping::class);
-        (new TestContainer)->add(MerchantOrderPayment::class, DefaultMerchantOrderPayment::class);
-        (new TestContainer)->add(MerchantOrderShopper::class, DefaultMerchantOrderShopper::class);
-        (new TestContainer)->add(MerchantOrderDiscount::class, DefaultMerchantOrderDiscount::class);
-        (new TestContainer)->add(MerchantOrderEvent::class, DefaultMerchantOrderEvent::class);
+        $container->add(MerchantOrder::class, DefaultMerchantOrder::class);
+        $container->add(MerchantOrderLine::class, DefaultMerchantOrderLine::class);
+        $container->add(MerchantOrderLinePersonalisation::class, DefaultMerchantOrderLinePersonalisation::class);
+        $container->add(MerchantOrderShippingAddress::class, DefaultMerchantOrderShippingAddress::class);
+        $container->add(MerchantOrderBillingAddress::class, DefaultMerchantOrderBillingAddress::class);
+        $container->add(MerchantOrderShipping::class, DefaultMerchantOrderShipping::class);
+        $container->add(MerchantOrderPayment::class, DefaultMerchantOrderPayment::class);
+        $container->add(MerchantOrderShopper::class, DefaultMerchantOrderShopper::class);
+        $container->add(MerchantOrderDiscount::class, DefaultMerchantOrderDiscount::class);
+        $container->add(MerchantOrderEvent::class, DefaultMerchantOrderEvent::class);
+
+        $container->add(GridItem::class, DefaultGridItem::class);
 
         // Customer
-        (new TestContainer)->add(CustomerRead::class, DefaultCustomerRead::class);
-        (new TestContainer)->add(CustomerShippingAddress::class, DefaultCustomerShippingAddress::class);
-        (new TestContainer)->add(CustomerBillingAddress::class, DefaultCustomerBillingAddress::class);
+        $container->add(CustomerRead::class, DefaultCustomerRead::class);
+        $container->add(CustomerShippingAddress::class, DefaultCustomerShippingAddress::class);
+        $container->add(CustomerBillingAddress::class, DefaultCustomerBillingAddress::class);
 
         // Repositories
-        (new TestContainer)->add(MysqlOrderRepository::class, new MysqlOrderRepository(new TestContainer, new TestTraderConfig));
+        $container->add(MysqlOrderRepository::class, new MysqlOrderRepository(new TestContainer, new TestTraderConfig));
+
+        // Applications
+        $container->add(VatNumberApplication::class, new VatNumberApplication($container->get(VatNumberValidator::class)));
     }
 
     public static function tearDown(): void
     {
-        InMemoryCatalogRepositories::clear();
+        InMemoryOrderRepositories::clear();
     }
 
     public static function drivers(): array
@@ -175,13 +231,17 @@ class OrderContext extends TraderContext
     public static function inMemory(): self
     {
         return new self(
-            new InMemoryOrderRepositories(new TestTraderConfig, new TestContainer)
+            new InMemoryOrderRepositories(new TestTraderConfig, new TestContainer),
+            new InMemoryCatalogRepositories(new TestTraderConfig, new TestContainer),
         );
     }
 
     public static function mysql(): self
     {
-        return new self(new MysqlOrderRepositories(new TestTraderConfig, new TestContainer));
+        return new self(
+            new MysqlOrderRepositories(new TestTraderConfig, new TestContainer),
+            new MysqlCatalogRepositories(new TestTraderConfig, new TestContainer),
+        );
     }
 
     public static function laravel(): self
@@ -189,7 +249,10 @@ class OrderContext extends TraderContext
         $config = app(TraderConfig::class);
         $container = app();
 
-        $context = new self(new MysqlOrderRepositories($config, $container));
+        $context = new self(
+            new MysqlOrderRepositories($config, $container),
+            new MysqlCatalogRepositories($config, $container),
+        );
 
         $context->setConfig($config);
         $context->setContainer($container);
@@ -237,18 +300,18 @@ class OrderContext extends TraderContext
             'order_ref' => $orderId.'-ref',
             'invoice_ref' => $orderId.'-invoice-ref',
             'order_state' => $this->container->get(OrderState::class)::fromString($state),
-            'total_excl' => 82500,
-            'total_incl' => 100000,
-            'total_vat' => 17500,
+            'total_excl' => 0,
+            'total_incl' => 0,
+            'total_vat' => 0,
             'vat_lines' => json_encode([]),
-            'subtotal_excl' => 82500,
-            'subtotal_incl' => 100000,
-            'discount_total_excl' => 5785,
-            'discount_total_incl' => 7000,
-            'shipping_cost_excl' => 4132,
-            'shipping_cost_incl' => 5000,
-            'payment_cost_excl' => 1653,
-            'payment_cost_incl' => 2000,
+            'subtotal_excl' => 0,
+            'subtotal_incl' => 0,
+            'discount_excl' => 0,
+            'discount_incl' => 0,
+            'shipping_cost_excl' => 0,
+            'shipping_cost_incl' => 0,
+            'payment_cost_excl' => 0,
+            'payment_cost_incl' => 0,
             'data' => json_encode([]),
         ], [
             Discount::class => [],
@@ -281,7 +344,7 @@ class OrderContext extends TraderContext
     {
         return Line::fromMappedData(array_merge([
             'line_id' => $orderId.':'.$lineId,
-            'variant_id' => 'variant-aaa',
+            'purchasable_reference' => 'variant@variant-aaa',
             'unit_price_excl' => '83',
             'unit_price_incl' => '100',
             'total_excl' => '83',
@@ -324,7 +387,9 @@ class OrderContext extends TraderContext
             'shipping_id' => $orderId.':'.$shippingId,
             'shipping_profile_id' => 'shipping-profile-aaa',
             'shipping_state' => DefaultShippingState::none,
-            'cost' => 50,
+            'cost_excl' => 50,
+            'discount_excl' => 5,
+            'total_excl' => 45,
             'data' => json_encode(['title' => ['nl' => $shippingId.' title nl', 'fr' => $shippingId.' title fr']]),
         ], $values), [
             'order_id' => $orderId,
@@ -350,7 +415,9 @@ class OrderContext extends TraderContext
             'payment_id' => $orderId.':'.$paymentId,
             'payment_method_id' => 'payment-method-aaa',
             'payment_state' => DefaultPaymentState::initialized,
-            'cost' => 20,
+            'cost_excl' => 50,
+            'discount_excl' => 5,
+            'total_excl' => 45,
             'data' => json_encode(['title' => ['nl' => $paymentId.' title nl', 'fr' => $paymentId.' title fr']]),
         ], $values), [
             'order_id' => $orderId,
@@ -375,7 +442,7 @@ class OrderContext extends TraderContext
         return ShippingAddress::fromMappedData(array_merge([
             'country_id' => 'BE',
             'line_1' => 'Lierseweg 81',
-            'line_2' => '',
+            'line_2' => null,
             'postal_code' => '2200',
             'city' => 'Herentals',
             'data' => '[]',
@@ -398,7 +465,7 @@ class OrderContext extends TraderContext
         return BillingAddress::fromMappedData(array_merge([
             'country_id' => 'NL',
             'line_1' => 'Example 12',
-            'line_2' => '',
+            'line_2' => null,
             'postal_code' => '1000',
             'city' => 'Amsterdam',
             'data' => '[]',
@@ -522,7 +589,7 @@ class OrderContext extends TraderContext
         $discountClass = $discountFactory->findMappable($key);
 
         $model = $discountClass::fromMappedData(array_merge([
-            'discount_id' => 'promo-discount-aaa',
+            'discount_id' => $promoDiscountId,
             'description' => '15% off',
             'discount_type' => 'percentage',
             'data' => json_encode([
@@ -614,6 +681,7 @@ class OrderContext extends TraderContext
     {
         $model = Country::fromMappedData(array_merge([
             'country_id' => $countryId,
+            'active' => true,
             'data' => json_encode([]),
         ], $values));
 
@@ -627,6 +695,36 @@ class OrderContext extends TraderContext
     public function saveOrder(DomainOrder $order): void
     {
         $this->orderRepos->orderRepository()->save($order);
+    }
+
+    public function refreshOrder(string|OrderId $orderId): DomainOrder
+    {
+        $orderId = $orderId instanceof OrderId ? $orderId : OrderId::fromString($orderId);
+
+        $this->apps()->cartApplication()->refresh(new RefreshCart($orderId->get()));
+
+        return $this->findOrder($orderId);
+    }
+
+    public function findOrder(string|OrderId $orderId): DomainOrder
+    {
+        $orderId = $orderId instanceof OrderId ? $orderId : OrderId::fromString($orderId);
+
+        return $this->orderRepos->orderRepository()->find($orderId);
+    }
+
+    public function findCart(string|OrderId $orderId): Cart
+    {
+        $orderId = $orderId instanceof OrderId ? $orderId : OrderId::fromString($orderId);
+
+        return $this->orderRepos->cartRepository()->findCart($orderId);
+    }
+
+    public function findMerchantOrder(string|OrderId $orderId): MerchantOrder
+    {
+        $orderId = $orderId instanceof OrderId ? $orderId : OrderId::fromString($orderId);
+
+        return $this->orderRepos->merchantOrderRepository()->findMerchantOrder($orderId);
     }
 
     public function createCustomer(string $customerId = 'customer-aaa', array $values = []): Customer

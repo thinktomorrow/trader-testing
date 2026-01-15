@@ -5,7 +5,9 @@ namespace Thinktomorrow\Trader\Testing\Catalog\Repositories;
 use Psr\Container\ContainerInterface;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
 use Thinktomorrow\Trader\Application\Product\Grid\FlattenedTaxonIds;
+use Thinktomorrow\Trader\Application\Product\Grid\GridRepository;
 use Thinktomorrow\Trader\Application\Product\ProductDetail\ProductDetailRepository;
+use Thinktomorrow\Trader\Application\Product\VariantLinks\VariantLinksComposer;
 use Thinktomorrow\Trader\Application\Taxon\Queries\TaxaSelectOptions;
 use Thinktomorrow\Trader\Application\Taxon\Queries\TaxonFilters;
 use Thinktomorrow\Trader\Application\Taxon\Redirect\TaxonRedirectRepository;
@@ -15,6 +17,7 @@ use Thinktomorrow\Trader\Domain\Model\Product\VariantRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyRepository;
 use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
+use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlGridRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlProductDetailRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlProductRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlTaxonomyRepository;
@@ -28,13 +31,18 @@ use Thinktomorrow\Trader\Infrastructure\Test\TestTraderConfig;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineFlattenedTaxonIds;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineTaxaSelectOptions;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineTaxonFilters;
+use Thinktomorrow\Trader\TraderConfig;
 
 class MysqlCatalogRepositories implements CatalogRepositories
 {
+    private TraderConfig $config;
+
     private ContainerInterface $container;
 
-    public function __construct(ContainerInterface $container)
+    public function __construct(TraderConfig $config, ContainerInterface $container)
     {
+        $this->config = $config;
+
         $this->container = $container;
     }
 
@@ -50,7 +58,17 @@ class MysqlCatalogRepositories implements CatalogRepositories
 
     public function taxonTreeRepository(): TaxonTreeRepository
     {
-        return new MysqlTaxonTreeRepository(new TestContainer, new TestTraderConfig);
+        return (new MysqlTaxonTreeRepository(new TestContainer, new TestTraderConfig))
+            ->withMemoization(false);
+    }
+
+    public function gridRepository(): GridRepository
+    {
+        return new MysqlGridRepository(
+            $this->container,
+            $this->config,
+            new VineFlattenedTaxonIds($this->taxonTreeRepository())
+        );
     }
 
     public function productRepository(): ProductRepository
@@ -71,6 +89,14 @@ class MysqlCatalogRepositories implements CatalogRepositories
     public function variantForCartRepository(): VariantForCartRepository
     {
         return new MysqlVariantRepository(new TestContainer);
+    }
+
+    public function variantLinksComposer(): VariantLinksComposer
+    {
+        return new VariantLinksComposer(
+            $this->productRepository(),
+            $this->container,
+        );
     }
 
     public function taxonRedirectRepository(): TaxonRedirectRepository

@@ -2,9 +2,12 @@
 
 namespace Thinktomorrow\Trader\Testing\Catalog\Repositories;
 
+use Psr\Container\ContainerInterface;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
 use Thinktomorrow\Trader\Application\Product\Grid\FlattenedTaxonIds;
+use Thinktomorrow\Trader\Application\Product\Grid\GridRepository;
 use Thinktomorrow\Trader\Application\Product\ProductDetail\ProductDetailRepository;
+use Thinktomorrow\Trader\Application\Product\VariantLinks\VariantLinksComposer;
 use Thinktomorrow\Trader\Application\Taxon\Queries\TaxaSelectOptions;
 use Thinktomorrow\Trader\Application\Taxon\Queries\TaxonFilters;
 use Thinktomorrow\Trader\Application\Taxon\Redirect\TaxonRedirectRepository;
@@ -36,9 +39,13 @@ class InMemoryCatalogRepositories implements CatalogRepositories
 {
     private TraderConfig $config;
 
-    public function __construct(TraderConfig $config)
+    private ContainerInterface $container;
+
+    public function __construct(TraderConfig $config, ContainerInterface $container)
     {
         $this->config = $config;
+
+        $this->container = $container;
     }
 
     public static function clear(): void
@@ -71,6 +78,11 @@ class InMemoryCatalogRepositories implements CatalogRepositories
         return new InMemoryTaxonTreeRepository(new TestContainer, new TestTraderConfig);
     }
 
+    public function gridRepository(): GridRepository
+    {
+        throw new \Exception('Not implemented in in-memory repositories');
+    }
+
     public function productRepository(): ProductRepository
     {
         return new InMemoryProductRepository;
@@ -89,6 +101,14 @@ class InMemoryCatalogRepositories implements CatalogRepositories
     public function variantForCartRepository(): VariantForCartRepository
     {
         return new InMemoryVariantRepository;
+    }
+
+    public function variantLinksComposer(): VariantLinksComposer
+    {
+        return new VariantLinksComposer(
+            $this->productRepository(),
+            $this->container,
+        );
     }
 
     public function taxonRedirectRepository(): TaxonRedirectRepository

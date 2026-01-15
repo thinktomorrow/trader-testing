@@ -10,9 +10,11 @@ use Thinktomorrow\Trader\Application\Promo\OrderPromo\Discounts\FixedAmountOrder
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\Discounts\PercentageOffOrderDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\OrderConditionFactory;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\OrderDiscountFactory;
+use Thinktomorrow\Trader\Application\Promo\OrderPromo\OrderPromoRepository;
 use Thinktomorrow\Trader\Domain\Model\Country\CountryRepository;
 use Thinktomorrow\Trader\Domain\Model\Customer\CustomerRepository;
 use Thinktomorrow\Trader\Domain\Model\CustomerLogin\CustomerLoginRepository;
+use Thinktomorrow\Trader\Domain\Model\Order\Invoice\InvoiceRepository;
 use Thinktomorrow\Trader\Domain\Model\Order\OrderRepository;
 use Thinktomorrow\Trader\Domain\Model\PaymentMethod\PaymentMethodRepository;
 use Thinktomorrow\Trader\Domain\Model\Promo\ConditionFactory;
@@ -22,7 +24,6 @@ use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\FixedAmountDiscount;
 use Thinktomorrow\Trader\Domain\Model\Promo\Discounts\PercentageOffDiscount;
 use Thinktomorrow\Trader\Domain\Model\Promo\PromoRepository;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfileRepository;
-use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlCartRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlCountryRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlCustomerLoginRepository;
@@ -33,7 +34,6 @@ use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlPaymentMethodR
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlPromoRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlShippingProfileRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlVariantRepository;
-use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlVatRateRepository;
 use Thinktomorrow\Trader\TraderConfig;
 
 class MysqlOrderRepositories implements OrderRepositories
@@ -94,6 +94,11 @@ class MysqlOrderRepositories implements OrderRepositories
         return new MysqlPromoRepository($discountFactory, $orderDiscountFactory);
     }
 
+    public function orderPromoRepository(): OrderPromoRepository
+    {
+        return $this->promoRepository();
+    }
+
     public function cartRepository(): CartRepository
     {
         return new MysqlCartRepository($this->container, $this->orderRepository());
@@ -124,8 +129,8 @@ class MysqlOrderRepositories implements OrderRepositories
         return new MysqlShippingProfileRepository($this->container);
     }
 
-    public function vatRateRepository(): VatRateRepository
+    public function invoiceRepository(): InvoiceRepository
     {
-        return new MysqlVatRateRepository($this->container);
+        return new MysqlOrderRepository($this->container, $this->config);
     }
 }
