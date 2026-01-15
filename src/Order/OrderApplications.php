@@ -34,7 +34,8 @@ class OrderApplications
         private TraderConfig $config,
         private ContainerInterface $container,
         private EventDispatcher $eventDispatcher,
-    ) {}
+    ) {
+    }
 
     public function cartApplication(): CartApplication
     {
