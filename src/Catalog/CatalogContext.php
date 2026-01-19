@@ -28,6 +28,9 @@ use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonState;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\Taxonomy;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyState;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyType;
+use Thinktomorrow\Trader\Domain\Model\VatRate\BaseRate;
+use Thinktomorrow\Trader\Domain\Model\VatRate\VatRate;
+use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateState;
 use Thinktomorrow\Trader\Infrastructure\Laravel\config\TraderConfig;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultProductDetail;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultProductTaxonItem;
@@ -44,13 +47,11 @@ use Thinktomorrow\Trader\Testing\TraderContext;
 
 class CatalogContext extends TraderContext
 {
-    private CatalogRepositories $catalogRepos;
-
-    public function __construct(CatalogRepositories $catalogRepos)
-    {
+    public function __construct(
+        public string $driverName,
+        private CatalogRepositories $catalogRepos
+    ) {
         parent::__construct();
-
-        $this->catalogRepos = $catalogRepos;
     }
 
     public function repos(): CatalogRepositories
@@ -91,12 +92,12 @@ class CatalogContext extends TraderContext
 
     public static function inMemory(): self
     {
-        return new self(new InMemoryCatalogRepositories(new TestTraderConfig, new TestContainer));
+        return new self('in_memory', new InMemoryCatalogRepositories(new TestTraderConfig, new TestContainer));
     }
 
     public static function mysql(): self
     {
-        return new self(new MysqlCatalogRepositories(new TestTraderConfig, new TestContainer));
+        return new self('mysql', new MysqlCatalogRepositories(new TestTraderConfig, new TestContainer));
     }
 
     public static function laravel(): self
@@ -104,7 +105,7 @@ class CatalogContext extends TraderContext
         $config = app(TraderConfig::class);
         $container = app();
 
-        $context = new self(new MysqlCatalogRepositories($config, $container));
+        $context = new self('laravel', new MysqlCatalogRepositories($config, $container));
 
         $context->setConfig($config);
         $context->setContainer($container);
@@ -349,5 +350,33 @@ class CatalogContext extends TraderContext
     public function findProductDetail(VariantId $variantId): ProductDetail
     {
         return $this->catalogRepos->productDetailRepository()->findProductDetail($variantId);
+    }
+
+    public function createVatRate(string $vatRateId = 'vatrate-aaa', array $values = [], array $baseRateValues = []): VatRate
+    {
+        $model = VatRate::fromMappedData(array_merge([
+            'vat_rate_id' => $vatRateId,
+            'country_id' => 'BE',
+            'rate' => '21',
+            'is_standard' => true,
+            'state' => VatRateState::online->value,
+            'data' => json_encode([]),
+        ], $values), [
+            BaseRate::class => $baseRateValues,
+            //                [
+            //                array_merge([
+            //                    'base_rate_id' => 'baserate-aaa',
+            //                    'origin_vat_rate_id' => 'origin-aaa',
+            //                    'target_vat_rate_id' => 'target-aaa',
+            //                    'rate' => '21',
+            //                ], $baseRateValues),
+            //            ],
+        ]);
+
+        if ($this->persist) {
+            $this->catalogRepos->vatRateRepository()->save($model);
+        }
+
+        return $model;
     }
 }

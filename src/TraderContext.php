@@ -87,6 +87,16 @@ abstract class TraderContext
 
     abstract public static function drivers(): array;
 
+    public static function driver(string $driverName): self
+    {
+        return match ($driverName) {
+            'in_memory' => static::inMemory(),
+            'mysql' => static::mysql(),
+            'laravel' => static::laravel(),
+            default => throw new \InvalidArgumentException("Unknown driver: {$driverName}"),
+        };
+    }
+
     // Factory for in memory context - ideal for acceptance tests
     abstract public static function inMemory(): self;
 

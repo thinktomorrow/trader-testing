@@ -74,9 +74,6 @@ use Thinktomorrow\Trader\Domain\Model\Promo\PromoState;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfile;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\ShippingProfileState;
 use Thinktomorrow\Trader\Domain\Model\ShippingProfile\Tariff;
-use Thinktomorrow\Trader\Domain\Model\VatRate\BaseRate;
-use Thinktomorrow\Trader\Domain\Model\VatRate\VatRate;
-use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateState;
 use Thinktomorrow\Trader\Infrastructure\Laravel\config\TraderConfig;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultAdjustLine;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\Cart\DefaultCart;
@@ -122,6 +119,7 @@ class OrderContext extends TraderContext
     public bool $persist = true;
 
     public function __construct(
+        public string $driverName,
         private OrderRepositories $orderRepos,
         private CatalogRepositories $catalogRepos
     ) {
@@ -231,6 +229,7 @@ class OrderContext extends TraderContext
     public static function inMemory(): self
     {
         return new self(
+            'in_memory',
             new InMemoryOrderRepositories(new TestTraderConfig, new TestContainer),
             new InMemoryCatalogRepositories(new TestTraderConfig, new TestContainer),
         );
@@ -239,6 +238,7 @@ class OrderContext extends TraderContext
     public static function mysql(): self
     {
         return new self(
+            'mysql',
             new MysqlOrderRepositories(new TestTraderConfig, new TestContainer),
             new MysqlCatalogRepositories(new TestTraderConfig, new TestContainer),
         );
@@ -250,6 +250,7 @@ class OrderContext extends TraderContext
         $container = app();
 
         $context = new self(
+            'laravel',
             new MysqlOrderRepositories($config, $container),
             new MysqlCatalogRepositories($config, $container),
         );
@@ -659,33 +660,6 @@ class OrderContext extends TraderContext
 
         if ($this->persist) {
             $this->orderRepos->shippingProfileRepository()->save($model);
-        }
-
-        return $model;
-    }
-
-    public function createVatRate(string $vatRateId = 'vatrate-aaa', array $values = [], array $baseRateValues = []): VatRate
-    {
-        $model = VatRate::fromMappedData(array_merge([
-            'vat_rate_id' => $vatRateId,
-            'country_id' => 'BE',
-            'rate' => '21',
-            'is_standard' => true,
-            'state' => VatRateState::online->value,
-            'data' => json_encode([]),
-        ], $values), [
-            BaseRate::class => [
-                array_merge([
-                    'base_rate_id' => 'baserate-aaa',
-                    'origin_vat_rate_id' => 'origin-aaa',
-                    'target_vat_rate_id' => 'target-aaa',
-                    'rate' => '21',
-                ], $baseRateValues),
-            ],
-        ]);
-
-        if ($this->persist) {
-            $this->orderRepos->vatRateRepository()->save($model);
         }
 
         return $model;
