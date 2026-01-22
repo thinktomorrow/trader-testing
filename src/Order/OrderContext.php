@@ -266,7 +266,12 @@ class OrderContext extends TraderContext
         $this->createShippingProfile();
         $this->createPaymentMethod();
         $this->createCountry();
+        $this->createCountry('NL');
         $this->createPromo();
+
+        // Create order without persisting it first - we'll do this after adding all parts
+        $originalPersist = $this->persist;
+        $this->dontPersist();
 
         $order = $this->createOrder($orderId);
 
@@ -286,10 +291,18 @@ class OrderContext extends TraderContext
         $this->addShopperToOrder($order, $this->createShopper($orderId, 'shopper-aaa'));
 
         // Discount
-        $this->addDiscountToOrder($order, $this->createOrderDiscount($orderId, 'discount-aaa'));
+        //        $this->addDiscountToOrder($order, $this->createOrderDiscount($orderId, 'discount-aaa'));
 
         // Clear all these default events
         $order->releaseEvents();
+
+        $this->persist = $originalPersist;
+
+        $this->container->get(AdjustOrderVatSnapshot::class)->adjust($order);
+
+        if ($this->persist) {
+            $this->saveOrder($order);
+        }
 
         return $order;
     }
@@ -489,7 +502,7 @@ class OrderContext extends TraderContext
         return Shopper::fromMappedData(array_merge([
             'shopper_id' => $orderId.':'.$shopperId,
             'customer_id' => null,
-            'email' => 'ben@thinktomorrow.be',
+            'email' => $orderId.'-'.$shopperId.'@thinktomorrow.be',
             'is_business' => false,
             'locale' => 'nl_BE',
             'register_after_checkout' => false,
