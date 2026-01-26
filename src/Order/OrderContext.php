@@ -307,6 +307,21 @@ class OrderContext extends TraderContext
         return $order;
     }
 
+    public function createDefaultDiscountedOrder(string $orderId = 'order-aaa'): DomainOrder
+    {
+        $order = $this->createDefaultOrder($orderId);
+
+        $this->addDiscountToOrder($order, $this->createOrderDiscount($orderId, 'discount-aaa'));
+
+        $this->container->get(AdjustOrderVatSnapshot::class)->adjust($order);
+
+        if ($this->persist) {
+            $this->saveOrder($order);
+        }
+
+        return $order;
+    }
+
     public function createOrder(string $orderId = 'order-aaa', string $state = DefaultOrderState::cart_pending->value): DomainOrder
     {
         $order = DomainOrder::fromMappedData([
