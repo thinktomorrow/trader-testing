@@ -34,15 +34,14 @@ class OrderApplications
         private TraderConfig $config,
         private ContainerInterface $container,
         private EventDispatcher $eventDispatcher,
-    ) {
-    }
+    ) {}
 
     public function cartApplication(): CartApplication
     {
         return new CartApplication(
             $this->config,
             $this->container,
-            $this->repos->variantForCartRepository(),
+            $this->catalogRepos->productDetailRepository(),
             $this->container->get(AdjustLine::class),
             $this->repos->orderRepository(),
             $this->container->get(OrderStateMachine::class),
@@ -149,6 +148,7 @@ class OrderApplications
             $this->repos->orderPromoRepository(),
             new ApplyPromoToOrder(
                 $this->repos->orderRepository(),
+                $this->config
             ),
             $this->container,
         );

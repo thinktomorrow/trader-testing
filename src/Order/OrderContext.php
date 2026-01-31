@@ -180,7 +180,7 @@ class OrderContext extends TraderContext
         ));
         $container->add(AdjustDiscounts::class, new AdjustDiscounts(
             static::inMemory()->repos()->orderPromoRepository(),
-            new ApplyPromoToOrder(static::inMemory()->repos()->orderRepository())
+            new ApplyPromoToOrder(static::inMemory()->repos()->orderRepository(), new TestTraderConfig)
         ));
 
         $container->add(VerifyPaymentMethodForCart::class, new DefaultVerifyPaymentMethodForCart);
