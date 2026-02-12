@@ -26,7 +26,6 @@ use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlTaxonRepositor
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlTaxonTreeRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlVariantRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlVatRateRepository;
-use Thinktomorrow\Trader\Infrastructure\Test\TestContainer;
 use Thinktomorrow\Trader\Infrastructure\Test\TestTraderConfig;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineFlattenedTaxonIds;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineTaxaSelectOptions;
@@ -58,7 +57,7 @@ class MysqlCatalogRepositories implements CatalogRepositories
 
     public function taxonTreeRepository(): TaxonTreeRepository
     {
-        return (new MysqlTaxonTreeRepository(new TestContainer, new TestTraderConfig))
+        return (new MysqlTaxonTreeRepository($this->container, new TestTraderConfig))
             ->withMemoization(false);
     }
 
@@ -73,22 +72,22 @@ class MysqlCatalogRepositories implements CatalogRepositories
 
     public function productRepository(): ProductRepository
     {
-        return new MysqlProductRepository(new MysqlVariantRepository(new TestContainer));
+        return new MysqlProductRepository(new MysqlVariantRepository($this->container));
     }
 
     public function productDetailRepository(): ProductDetailRepository
     {
-        return new MysqlProductDetailRepository(new TestContainer);
+        return new MysqlProductDetailRepository($this->container);
     }
 
     public function variantRepository(): VariantRepository
     {
-        return new MysqlVariantRepository(new TestContainer);
+        return new MysqlVariantRepository($this->container);
     }
 
     public function variantForCartRepository(): VariantForCartRepository
     {
-        return new MysqlVariantRepository(new TestContainer);
+        return new MysqlVariantRepository($this->container);
     }
 
     public function variantLinksComposer(): VariantLinksComposer
