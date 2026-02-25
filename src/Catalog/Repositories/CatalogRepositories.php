@@ -13,6 +13,7 @@ use Thinktomorrow\Trader\Application\Taxon\Redirect\TaxonRedirectRepository;
 use Thinktomorrow\Trader\Application\Taxon\Tree\TaxonTreeRepository;
 use Thinktomorrow\Trader\Domain\Model\Product\ProductRepository;
 use Thinktomorrow\Trader\Domain\Model\Product\VariantRepository;
+use Thinktomorrow\Trader\Domain\Model\Stock\StockItemRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyRepository;
 use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
@@ -46,4 +47,6 @@ interface CatalogRepositories
     public function taxaSelectOptions(): TaxaSelectOptions;
 
     public function vatRateRepository(): VatRateRepository;
+
+    public function stockItemRepository(): StockItemRepository;
 }

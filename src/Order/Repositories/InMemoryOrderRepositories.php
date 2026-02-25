@@ -5,6 +5,7 @@ namespace Thinktomorrow\Trader\Testing\Order\Repositories;
 use Psr\Container\ContainerInterface;
 use Thinktomorrow\Trader\Application\Cart\Read\CartRepository;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
+use Thinktomorrow\Trader\Application\Order\Grid\OrderGridRepository;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderRepository;
 use Thinktomorrow\Trader\Application\Promo\LinePromo\Discounts\SalePriceLineDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\Conditions\MinimumAmountOrderCondition;
@@ -147,5 +148,10 @@ class InMemoryOrderRepositories implements OrderRepositories
     public function invoiceRepository(): InvoiceRepository
     {
         return new InMemoryOrderRepository;
+    }
+
+    public function orderGridRepository(): OrderGridRepository
+    {
+        throw new \Exception('Not implemented in in-memory repositories');
     }
 }

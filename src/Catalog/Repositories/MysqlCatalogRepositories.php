@@ -14,6 +14,7 @@ use Thinktomorrow\Trader\Application\Taxon\Redirect\TaxonRedirectRepository;
 use Thinktomorrow\Trader\Application\Taxon\Tree\TaxonTreeRepository;
 use Thinktomorrow\Trader\Domain\Model\Product\ProductRepository;
 use Thinktomorrow\Trader\Domain\Model\Product\VariantRepository;
+use Thinktomorrow\Trader\Domain\Model\Stock\StockItemRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyRepository;
 use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
@@ -121,5 +122,10 @@ class MysqlCatalogRepositories implements CatalogRepositories
     public function vatRateRepository(): VatRateRepository
     {
         return new MysqlVatRateRepository($this->container);
+    }
+
+    public function stockItemRepository(): StockItemRepository
+    {
+        return new MysqlVariantRepository($this->container);
     }
 }

@@ -5,6 +5,7 @@ namespace Thinktomorrow\Trader\Testing\Order\Repositories;
 use Psr\Container\ContainerInterface;
 use Thinktomorrow\Trader\Application\Cart\Read\CartRepository;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
+use Thinktomorrow\Trader\Application\Order\Grid\OrderGridRepository;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderRepository;
 use Thinktomorrow\Trader\Application\Promo\LinePromo\Discounts\SalePriceLineDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\Discounts\FixedAmountOrderDiscount;
@@ -31,6 +32,7 @@ use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlCountryReposit
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlCustomerLoginRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlCustomerRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlMerchantOrderRepository;
+use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlOrderGridRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlOrderRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlPaymentMethodRepository;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlPromoRepository;
@@ -50,9 +52,7 @@ class MysqlOrderRepositories implements OrderRepositories
         $this->container = $container;
     }
 
-    public static function clear(): void
-    {
-    }
+    public static function clear(): void {}
 
     public function countryRepository(): CountryRepository
     {
@@ -138,5 +138,10 @@ class MysqlOrderRepositories implements OrderRepositories
     public function invoiceRepository(): InvoiceRepository
     {
         return new MysqlOrderRepository($this->container, $this->config);
+    }
+
+    public function orderGridRepository(): OrderGridRepository
+    {
+        return new MysqlOrderGridRepository($this->container, $this->config);
     }
 }

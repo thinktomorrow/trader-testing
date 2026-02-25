@@ -14,6 +14,7 @@ use Thinktomorrow\Trader\Application\Taxon\Redirect\TaxonRedirectRepository;
 use Thinktomorrow\Trader\Application\Taxon\Tree\TaxonTreeRepository;
 use Thinktomorrow\Trader\Domain\Model\Product\ProductRepository;
 use Thinktomorrow\Trader\Domain\Model\Product\VariantRepository;
+use Thinktomorrow\Trader\Domain\Model\Stock\StockItemRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonRepository;
 use Thinktomorrow\Trader\Domain\Model\Taxonomy\TaxonomyRepository;
 use Thinktomorrow\Trader\Domain\Model\VatRate\VatRateRepository;
@@ -134,5 +135,10 @@ class InMemoryCatalogRepositories implements CatalogRepositories
     public function vatRateRepository(): VatRateRepository
     {
         return new InMemoryVatRateRepository($this->config);
+    }
+
+    public function stockItemRepository(): StockItemRepository
+    {
+        return new InMemoryVariantRepository;
     }
 }

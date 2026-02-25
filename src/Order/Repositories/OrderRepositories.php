@@ -4,6 +4,7 @@ namespace Thinktomorrow\Trader\Testing\Order\Repositories;
 
 use Thinktomorrow\Trader\Application\Cart\Read\CartRepository;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepository;
+use Thinktomorrow\Trader\Application\Order\Grid\OrderGridRepository;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderRepository;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\OrderDiscountFactory;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\OrderPromoRepository;
@@ -46,4 +47,6 @@ interface OrderRepositories
     public function orderPromoRepository(): OrderPromoRepository;
 
     public function invoiceRepository(): InvoiceRepository;
+
+    public function orderGridRepository(): OrderGridRepository;
 }

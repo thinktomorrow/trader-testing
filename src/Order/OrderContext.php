@@ -2,6 +2,7 @@
 
 namespace Thinktomorrow\Trader\Testing\Order;
 
+use Thinktomorrow\Trader\Application\Cart\PaymentMethod\PaymentMethodForCart;
 use Thinktomorrow\Trader\Application\Cart\PaymentMethod\VerifyPaymentMethodForCart;
 use Thinktomorrow\Trader\Application\Cart\Read\Cart;
 use Thinktomorrow\Trader\Application\Cart\Read\CartBillingAddress;
@@ -19,10 +20,12 @@ use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustOrderVatSn
 use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustShipping;
 use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustVatRates;
 use Thinktomorrow\Trader\Application\Cart\RefreshCart\RefreshCart;
+use Thinktomorrow\Trader\Application\Cart\ShippingProfile\ShippingProfileForCart;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCart;
 use Thinktomorrow\Trader\Application\Customer\Read\CustomerBillingAddress;
 use Thinktomorrow\Trader\Application\Customer\Read\CustomerRead;
 use Thinktomorrow\Trader\Application\Customer\Read\CustomerShippingAddress;
+use Thinktomorrow\Trader\Application\Order\Grid\OrderGridItem;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrder;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderBillingAddress;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderDiscount;
@@ -89,6 +92,8 @@ use Thinktomorrow\Trader\Infrastructure\Laravel\Models\CustomerRead\DefaultCusto
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\CustomerRead\DefaultCustomerRead;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\CustomerRead\DefaultCustomerShippingAddress;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultGridItem;
+use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultOrderGridItem;
+use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultShippingProfileForCart;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\DefaultVariantForCart;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\MerchantOrder\DefaultMerchantOrder;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\MerchantOrder\DefaultMerchantOrderBillingAddress;
@@ -100,6 +105,7 @@ use Thinktomorrow\Trader\Infrastructure\Laravel\Models\MerchantOrder\DefaultMerc
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\MerchantOrder\DefaultMerchantOrderShipping;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\MerchantOrder\DefaultMerchantOrderShippingAddress;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\MerchantOrder\DefaultMerchantOrderShopper;
+use Thinktomorrow\Trader\Infrastructure\Laravel\Models\PaymentMethod\DefaultPaymentMethodForCart;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\PaymentMethod\DefaultVerifyPaymentMethodForCart;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlOrderRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\DummyVatNumberValidator;
@@ -156,6 +162,9 @@ class OrderContext extends TraderContext
         $container->add(PaymentStateMachine::class, new PaymentStateMachine(DefaultPaymentState::cases(), DefaultPaymentState::getTransitions()));
         $container->add(ShippingStateMachine::class, new ShippingStateMachine(DefaultShippingState::cases(), DefaultShippingState::getTransitions()));
 
+        // Catalog
+        $container->add(GridItem::class, DefaultGridItem::class);
+
         // Cart
         $container->add(VariantForCart::class, DefaultVariantForCart::class);
         $container->add(Cart::class, DefaultCart::class);
@@ -183,6 +192,8 @@ class OrderContext extends TraderContext
             new ApplyPromoToOrder(static::inMemory()->repos()->orderRepository(), new TestTraderConfig)
         ));
 
+        $container->add(PaymentMethodForCart::class, DefaultPaymentMethodForCart::class);
+        $container->add(ShippingProfileForCart::class, DefaultShippingProfileForCart::class);
         $container->add(VerifyPaymentMethodForCart::class, new DefaultVerifyPaymentMethodForCart);
         $container->add(VatNumberValidator::class, new DummyVatNumberValidator);
 
@@ -197,8 +208,7 @@ class OrderContext extends TraderContext
         $container->add(MerchantOrderShopper::class, DefaultMerchantOrderShopper::class);
         $container->add(MerchantOrderDiscount::class, DefaultMerchantOrderDiscount::class);
         $container->add(MerchantOrderEvent::class, DefaultMerchantOrderEvent::class);
-
-        $container->add(GridItem::class, DefaultGridItem::class);
+        $container->add(OrderGridItem::class, DefaultOrderGridItem::class);
 
         // Customer
         $container->add(CustomerRead::class, DefaultCustomerRead::class);
@@ -217,6 +227,7 @@ class OrderContext extends TraderContext
         InMemoryOrderRepositories::clear();
     }
 
+    /** @return OrderContext[] */
     public static function drivers(): array
     {
         return [
@@ -607,7 +618,7 @@ class OrderContext extends TraderContext
     {
         $model = Promo::fromMappedData(array_merge([
             'promo_id' => $promoId,
-            'coupon_code' => 'PROMO123',
+            'coupon_code' => null, // PROMO-123
             'state' => PromoState::online->value,
             'is_combinable' => false,
             'is_system_promo' => false,
@@ -767,6 +778,18 @@ class OrderContext extends TraderContext
         }
 
         return $model;
+    }
+
+    public function addCustomerToOrder(Order $order, Customer $customer): void
+    {
+        $shopper = $order->getShopper();
+        $shopper->updateCustomerId($customer->customerId);
+
+        $order->updateShopper($shopper);
+
+        if ($this->persist) {
+            $this->saveOrder($order);
+        }
     }
 
     public function createCustomerBillingAddress(string $customerId = 'customer-aaa', array $values = []): \Thinktomorrow\Trader\Domain\Model\Customer\Address\BillingAddress

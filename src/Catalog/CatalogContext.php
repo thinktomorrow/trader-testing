@@ -20,6 +20,7 @@ use Thinktomorrow\Trader\Domain\Model\Product\Variant\Variant;
 use Thinktomorrow\Trader\Domain\Model\Product\Variant\VariantId;
 use Thinktomorrow\Trader\Domain\Model\Product\Variant\VariantState;
 use Thinktomorrow\Trader\Domain\Model\Product\VariantTaxa\VariantTaxon;
+use Thinktomorrow\Trader\Domain\Model\Stock\StockItem;
 use Thinktomorrow\Trader\Domain\Model\Taxon\Taxon;
 use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonId;
 use Thinktomorrow\Trader\Domain\Model\Taxon\TaxonKey;
@@ -81,6 +82,7 @@ class CatalogContext extends TraderContext
         InMemoryCatalogRepositories::clear();
     }
 
+    /** @return CatalogContext[] */
     public static function drivers(): array
     {
         return [
@@ -152,8 +154,8 @@ class CatalogContext extends TraderContext
         $taxon->addData(['title' => ['nl' => $taxonId.' title nl', 'fr' => $taxonId.' title fr']]);
 
         $taxon->updateTaxonKeys([
-            TaxonKey::create($taxon->taxonId, TaxonKeyId::fromString($taxonId.'-key-nl'), Locale::fromString('nl')),
             TaxonKey::create($taxon->taxonId, TaxonKeyId::fromString($taxonId.'-key-fr'), Locale::fromString('fr')),
+            TaxonKey::create($taxon->taxonId, TaxonKeyId::fromString($taxonId.'-key-nl'), Locale::fromString('nl')),
         ]);
 
         $this->saveTaxon($taxon);
@@ -313,6 +315,22 @@ class CatalogContext extends TraderContext
         return $product;
     }
 
+    public function createStockItem(string $stockItemId = 'variant-aaa', array $values = []): StockItem
+    {
+        $stockItem = StockItem::fromMappedData(array_merge([
+            'stockitem_id' => $stockItemId,
+            'stock_level' => 100,
+            'ignore_out_of_stock' => false,
+            'stock_data' => json_encode(['foo' => 'bar']),
+        ]));
+
+        if ($this->persist) {
+            $this->catalogRepos->stockItemRepository()->saveStockItem($stockItem);
+        }
+
+        return $stockItem;
+    }
+
     /**
      * Data provider for tests, providing different product setups.
      *
@@ -338,6 +356,22 @@ class CatalogContext extends TraderContext
             $this->linkProductToTaxon($this->createProduct(), $taxon),
             $this->linkProductToTaxon($this->linkProductToTaxon($this->createProduct(), $taxon2), $taxon),
         ];
+    }
+
+    public function createDefaultTree(): void
+    {
+        $this->createTaxonomy('taxonomy-aaa');
+
+        $taxonA = $this->createTaxon('taxon-aaa', 'taxonomy-aaa');
+        $taxonB = $this->createTaxon('taxon-bbb', 'taxonomy-aaa', $taxonA->taxonId->get());
+        $taxonC = $this->createTaxon('taxon-ccc', 'taxonomy-aaa', $taxonA->taxonId->get());
+        $taxonD = $this->createTaxon('taxon-ddd', 'taxonomy-aaa');
+        $taxonE = $this->createTaxon('taxon-eee', 'taxonomy-aaa', $taxonD->taxonId->get());
+
+        $this->createTaxonomy('taxonomy-bbb');
+
+        $taxonF = $this->createTaxon('taxon-fff', 'taxonomy-bbb');
+        $taxonG = $this->createTaxon('taxon-ggg', 'taxonomy-bbb', $taxonF->taxonId->get());
     }
 
     public function findProduct(string|ProductId $productId): Product
