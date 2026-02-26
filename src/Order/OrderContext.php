@@ -109,6 +109,9 @@ use Thinktomorrow\Trader\Infrastructure\Laravel\Models\PaymentMethod\DefaultPaym
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\PaymentMethod\DefaultVerifyPaymentMethodForCart;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlOrderRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\DummyVatNumberValidator;
+use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryPaymentMethodRepository;
+use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryPromoRepository;
+use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryShippingProfileRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\TestContainer;
 use Thinktomorrow\Trader\Infrastructure\Test\TestTraderConfig;
 use Thinktomorrow\Trader\Testing\Catalog\CatalogContext;
@@ -225,6 +228,9 @@ class OrderContext extends TraderContext
     public static function tearDown(): void
     {
         InMemoryOrderRepositories::clear();
+        InMemoryPaymentMethodRepository::clear();
+        InMemoryShippingProfileRepository::clear();
+        InMemoryPromoRepository::clear();
     }
 
     /** @return OrderContext[] */
