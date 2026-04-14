@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests\Unit;
+
 use PHPUnit\Framework\TestCase;
 use Thinktomorrow\Trader\Testing\Catalog\CatalogApplications;
 use Thinktomorrow\Trader\Testing\Catalog\CatalogContext;
