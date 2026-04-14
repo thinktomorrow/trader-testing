@@ -9,6 +9,7 @@ use Thinktomorrow\Trader\Application\Order\Grid\OrderGridRepository;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderRepository;
 use Thinktomorrow\Trader\Application\Promo\LinePromo\Discounts\SalePriceLineDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\Conditions\MinimumAmountOrderCondition;
+use Thinktomorrow\Trader\Application\Promo\OrderPromo\Conditions\MinimumLinesQuantityOrderCondition;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\Discounts\FixedAmountOrderDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\Discounts\PercentageOffOrderDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\OrderConditionFactory;
@@ -97,7 +98,7 @@ class InMemoryOrderRepositories implements OrderRepositories
             PercentageOffOrderDiscount::class,
         ], new OrderConditionFactory([
             MinimumAmountOrderCondition::class,
-            \Thinktomorrow\Trader\Application\Promo\OrderPromo\Conditions\MinimumLinesQuantityOrderCondition::class,
+            MinimumLinesQuantityOrderCondition::class,
         ]));
     }
 

@@ -8,6 +8,7 @@ use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCartRepositor
 use Thinktomorrow\Trader\Application\Order\Grid\OrderGridRepository;
 use Thinktomorrow\Trader\Application\Order\MerchantOrder\MerchantOrderRepository;
 use Thinktomorrow\Trader\Application\Promo\LinePromo\Discounts\SalePriceLineDiscount;
+use Thinktomorrow\Trader\Application\Promo\OrderPromo\Conditions\MinimumLinesQuantityOrderCondition;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\Discounts\FixedAmountOrderDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\Discounts\PercentageOffOrderDiscount;
 use Thinktomorrow\Trader\Application\Promo\OrderPromo\OrderConditionFactory;
@@ -52,9 +53,7 @@ class MysqlOrderRepositories implements OrderRepositories
         $this->container = $container;
     }
 
-    public static function clear(): void
-    {
-    }
+    public static function clear(): void {}
 
     public function countryRepository(): CountryRepository
     {
@@ -89,7 +88,7 @@ class MysqlOrderRepositories implements OrderRepositories
             FixedAmountOrderDiscount::class,
             PercentageOffOrderDiscount::class,
         ], new OrderConditionFactory([
-            \Thinktomorrow\Trader\Application\Promo\OrderPromo\Conditions\MinimumLinesQuantityOrderCondition::class,
+            MinimumLinesQuantityOrderCondition::class,
         ]));
     }
 

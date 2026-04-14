@@ -1,46 +1,51 @@
 <?php
 
-class CatalogTest extends \PHPUnit\Framework\TestCase
+use PHPUnit\Framework\TestCase;
+use Thinktomorrow\Trader\Testing\Catalog\CatalogApplications;
+use Thinktomorrow\Trader\Testing\Catalog\CatalogContext;
+use Thinktomorrow\Trader\Testing\Catalog\Repositories\CatalogRepositories;
+
+class CatalogTest extends TestCase
 {
     public function test_it_can_setup_in_memory_catalog(): void
     {
-        $catalog = \Thinktomorrow\Trader\Testing\Catalog\CatalogContext::inMemory();
+        $catalog = CatalogContext::inMemory();
 
         $this->assertNotNull($catalog);
     }
 
     public function test_it_can_call_in_memory_repos(): void
     {
-        $catalog = \Thinktomorrow\Trader\Testing\Catalog\CatalogContext::inMemory();
+        $catalog = CatalogContext::inMemory();
 
-        $this->assertInstanceOf(\Thinktomorrow\Trader\Testing\Catalog\Repositories\CatalogRepositories::class, $catalog->repos());
+        $this->assertInstanceOf(CatalogRepositories::class, $catalog->repos());
     }
 
     public function test_it_can_call_in_memory_apps(): void
     {
-        $catalog = \Thinktomorrow\Trader\Testing\Catalog\CatalogContext::inMemory();
+        $catalog = CatalogContext::inMemory();
 
-        $this->assertInstanceOf(\Thinktomorrow\Trader\Testing\Catalog\CatalogApplications::class, $catalog->apps());
+        $this->assertInstanceOf(CatalogApplications::class, $catalog->apps());
     }
 
     public function test_it_can_setup_mysql_catalog(): void
     {
-        $catalog = \Thinktomorrow\Trader\Testing\Catalog\CatalogContext::mysql();
+        $catalog = CatalogContext::mysql();
 
         $this->assertNotNull($catalog);
     }
 
     public function test_it_can_call_mysql_repos(): void
     {
-        $catalog = \Thinktomorrow\Trader\Testing\Catalog\CatalogContext::mysql();
+        $catalog = CatalogContext::mysql();
 
-        $this->assertInstanceOf(\Thinktomorrow\Trader\Testing\Catalog\Repositories\CatalogRepositories::class, $catalog->repos());
+        $this->assertInstanceOf(CatalogRepositories::class, $catalog->repos());
     }
 
     public function test_it_can_call_mysql_apps(): void
     {
-        $catalog = \Thinktomorrow\Trader\Testing\Catalog\CatalogContext::mysql();
+        $catalog = CatalogContext::mysql();
 
-        $this->assertInstanceOf(\Thinktomorrow\Trader\Testing\Catalog\CatalogApplications::class, $catalog->apps());
+        $this->assertInstanceOf(CatalogApplications::class, $catalog->apps());
     }
 }

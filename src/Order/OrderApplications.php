@@ -9,11 +9,14 @@ use Thinktomorrow\Trader\Application\Cart\PaymentMethod\VerifyPaymentMethodForCa
 use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustLine;
 use Thinktomorrow\Trader\Application\Cart\RefreshCart\RefreshCartAction;
 use Thinktomorrow\Trader\Application\Cart\ShippingProfile\UpdateShippingProfileOnOrder;
+use Thinktomorrow\Trader\Application\Customer\CustomerApplication;
 use Thinktomorrow\Trader\Application\Order\Merchant\MerchantOrderApplication;
 use Thinktomorrow\Trader\Application\Order\State\OrderStateApplication;
+use Thinktomorrow\Trader\Application\PaymentMethod\PaymentMethodApplication;
 use Thinktomorrow\Trader\Application\Promo\ApplyPromoToOrder;
 use Thinktomorrow\Trader\Application\Promo\Coupon\CouponPromoApplication;
 use Thinktomorrow\Trader\Application\Promo\CUD\PromoApplication;
+use Thinktomorrow\Trader\Application\ShippingProfile\ShippingProfileApplication;
 use Thinktomorrow\Trader\Application\VatNumber\VatNumberApplication;
 use Thinktomorrow\Trader\Application\VatNumber\VatNumberValidator;
 use Thinktomorrow\Trader\Application\VatRate\FindVatRateForOrder;
@@ -34,8 +37,7 @@ class OrderApplications
         private TraderConfig $config,
         private ContainerInterface $container,
         private EventDispatcher $eventDispatcher,
-    ) {
-    }
+    ) {}
 
     public function cartApplication(): CartApplication
     {
@@ -125,7 +127,7 @@ class OrderApplications
 
     public function customerApplication()
     {
-        return new \Thinktomorrow\Trader\Application\Customer\CustomerApplication(
+        return new CustomerApplication(
             $this->repos->customerRepository(),
             $this->eventDispatcher,
         );
@@ -157,7 +159,7 @@ class OrderApplications
 
     public function paymentMethodApplication()
     {
-        return new \Thinktomorrow\Trader\Application\PaymentMethod\PaymentMethodApplication(
+        return new PaymentMethodApplication(
             $this->eventDispatcher,
             $this->repos->paymentMethodRepository(),
         );
@@ -165,7 +167,7 @@ class OrderApplications
 
     public function shippingProfileApplication()
     {
-        return new \Thinktomorrow\Trader\Application\ShippingProfile\ShippingProfileApplication(
+        return new ShippingProfileApplication(
             $this->eventDispatcher,
             $this->repos->shippingProfileRepository(),
         );
