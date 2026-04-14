@@ -18,6 +18,6 @@
     "phpunit/phpunit": "^12.5",
     "phpstan/phpstan": "^2.1.17",
     "thinktomorrow/trader" : "dev-main@dev",
-    "laravel/pint": "^1.29"
+    "laravel/pint": "^1.24"
   }
 }
