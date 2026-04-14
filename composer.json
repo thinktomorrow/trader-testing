@@ -17,7 +17,9 @@
     "php": ">=8.4",
     "phpunit/phpunit": "^12.5",
     "phpstan/phpstan": "^2.1.17",
-    "thinktomorrow/trader" : "dev-main@dev",
-    "laravel/pint": "^1.24"
+    "thinktomorrow/trader" : "dev-main@dev"
+  },
+  "require": {
+    "laravel/pint": "1.24"
   }
 }
