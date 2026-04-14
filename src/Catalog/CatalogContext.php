@@ -2,6 +2,7 @@
 
 namespace Thinktomorrow\Trader\Testing\Catalog;
 
+use Illuminate\Container\Container;
 use Thinktomorrow\Trader\Application\Product\ProductDetail\ProductDetail;
 use Thinktomorrow\Trader\Application\Product\Taxa\ProductTaxonItem;
 use Thinktomorrow\Trader\Application\Product\Taxa\VariantTaxonItem;
@@ -104,8 +105,17 @@ class CatalogContext extends TraderContext
 
     public static function laravel(): self
     {
-        $config = app(TraderConfig::class);
-        $container = app();
+        $container = Container::getInstance();
+
+        if (! $container) {
+            throw new \RuntimeException('Laravel container is not available.');
+        }
+
+        $config = $container->get(TraderConfig::class);
+
+        if (! $config instanceof TraderConfig) {
+            throw new \RuntimeException('TraderConfig binding is invalid.');
+        }
 
         $context = new self('laravel', new MysqlCatalogRepositories($config, $container));
 

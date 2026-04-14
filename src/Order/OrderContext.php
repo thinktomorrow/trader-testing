@@ -2,6 +2,7 @@
 
 namespace Thinktomorrow\Trader\Testing\Order;
 
+use Illuminate\Container\Container;
 use Thinktomorrow\Trader\Application\Cart\PaymentMethod\PaymentMethodForCart;
 use Thinktomorrow\Trader\Application\Cart\PaymentMethod\VerifyPaymentMethodForCart;
 use Thinktomorrow\Trader\Application\Cart\Read\Cart;
@@ -109,6 +110,7 @@ use Thinktomorrow\Trader\Infrastructure\Laravel\Models\PaymentMethod\DefaultPaym
 use Thinktomorrow\Trader\Infrastructure\Laravel\Models\PaymentMethod\DefaultVerifyPaymentMethodForCart;
 use Thinktomorrow\Trader\Infrastructure\Laravel\Repositories\MysqlOrderRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\DummyVatNumberValidator;
+use Thinktomorrow\Trader\Infrastructure\Test\EventDispatcherSpy;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryPaymentMethodRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryPromoRepository;
 use Thinktomorrow\Trader\Infrastructure\Test\Repositories\InMemoryShippingProfileRepository;
@@ -263,8 +265,17 @@ class OrderContext extends TraderContext
 
     public static function laravel(): self
     {
-        $config = app(TraderConfig::class);
-        $container = app();
+        $container = Container::getInstance();
+
+        if (! $container) {
+            throw new \RuntimeException('Laravel container is not available.');
+        }
+
+        $config = $container->get(TraderConfig::class);
+
+        if (! $config instanceof TraderConfig) {
+            throw new \RuntimeException('TraderConfig binding is invalid.');
+        }
 
         $context = new self(
             'laravel',
@@ -563,7 +574,9 @@ class OrderContext extends TraderContext
         $this->apps()->promoApplication()->createSalePriceSystemPromo();
 
         // Clear sale price event to not interfere with tests
-        $this->eventDispatcher->releaseDispatchedEvents();
+        if ($this->eventDispatcher instanceof EventDispatcherSpy) {
+            $this->eventDispatcher->releaseDispatchedEvents();
+        }
     }
 
     public function createOrderDiscount(string $orderId = 'order-aaa', string $discountId = 'discount-aaa', array $values = []): Discount
@@ -849,7 +862,7 @@ class OrderContext extends TraderContext
         $model = CustomerLogin::create(
             $customer->customerId,
             Email::fromString($customer->getEmail()->get()),
-            bcrypt($password)
+            password_hash($password, PASSWORD_BCRYPT)
         );
 
         if ($this->persist) {
