@@ -14,7 +14,7 @@
     "classmap": []
   },
   "require-dev": {
-    "php": "^8.5",
+    "php": ">=8.4",
     "phpunit/phpunit": "^12.5",
     "phpstan/phpstan": "^2.1.17",
     "thinktomorrow/trader" : "dev-main@dev",
