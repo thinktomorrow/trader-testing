@@ -10,6 +10,7 @@ use Thinktomorrow\Trader\Application\Product\ProductDetail\ProductDetailReposito
 use Thinktomorrow\Trader\Application\Product\VariantLinks\VariantLinksComposer;
 use Thinktomorrow\Trader\Application\Taxon\Queries\TaxaSelectOptions;
 use Thinktomorrow\Trader\Application\Taxon\Queries\TaxonFilters;
+use Thinktomorrow\Trader\Application\Taxon\Queries\TaxonHierarchy;
 use Thinktomorrow\Trader\Application\Taxon\Redirect\TaxonRedirectRepository;
 use Thinktomorrow\Trader\Application\Taxon\Tree\TaxonTreeRepository;
 use Thinktomorrow\Trader\Domain\Model\Product\ProductRepository;
@@ -34,6 +35,7 @@ use Thinktomorrow\Trader\Infrastructure\Test\TestTraderConfig;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineFlattenedTaxonIds;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineTaxaSelectOptions;
 use Thinktomorrow\Trader\Infrastructure\Vine\VineTaxonFilters;
+use Thinktomorrow\Trader\Infrastructure\Vine\VineTaxonHierarchy;
 use Thinktomorrow\Trader\TraderConfig;
 
 class InMemoryCatalogRepositories implements CatalogRepositories
@@ -79,6 +81,11 @@ class InMemoryCatalogRepositories implements CatalogRepositories
         return new InMemoryTaxonTreeRepository(new TestContainer, new TestTraderConfig);
     }
 
+    public function taxonHierarchy(): TaxonHierarchy
+    {
+        return new VineTaxonHierarchy($this->taxonTreeRepository());
+    }
+
     public function gridRepository(): GridRepository
     {
         throw new \Exception('Not implemented in in-memory repositories');
@@ -119,12 +126,12 @@ class InMemoryCatalogRepositories implements CatalogRepositories
 
     public function taxonFilters(): TaxonFilters
     {
-        return new VineTaxonFilters(new TestTraderConfig, $this->taxonTreeRepository(), $this->taxonomyRepository());
+        return new VineTaxonFilters(new TestTraderConfig, $this->taxonTreeRepository(), $this->taxonomyRepository(), $this->taxonHierarchy());
     }
 
     public function flattenedTaxonIds(): FlattenedTaxonIds
     {
-        return new VineFlattenedTaxonIds($this->taxonTreeRepository());
+        return new VineFlattenedTaxonIds($this->taxonTreeRepository(), $this->taxonHierarchy());
     }
 
     public function taxaSelectOptions(): TaxaSelectOptions

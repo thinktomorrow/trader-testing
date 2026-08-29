@@ -21,6 +21,9 @@ use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustOrderVatSn
 use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustShipping;
 use Thinktomorrow\Trader\Application\Cart\RefreshCart\Adjusters\AdjustVatRates;
 use Thinktomorrow\Trader\Application\Cart\RefreshCart\RefreshCart;
+use Thinktomorrow\Trader\Application\Cart\ShippingProfile\Eligibility\ProfileMustBeOnline;
+use Thinktomorrow\Trader\Application\Cart\ShippingProfile\Eligibility\ProfileMustSupportShippingCountry;
+use Thinktomorrow\Trader\Application\Cart\ShippingProfile\Eligibility\ShippingProfileEligibility;
 use Thinktomorrow\Trader\Application\Cart\ShippingProfile\ShippingProfileForCart;
 use Thinktomorrow\Trader\Application\Cart\VariantForCart\VariantForCart;
 use Thinktomorrow\Trader\Application\Customer\Read\CustomerBillingAddress;
@@ -181,6 +184,10 @@ class OrderContext extends TraderContext
         $container->add(CartPayment::class, DefaultCartPayment::class);
         $container->add(CartShopper::class, DefaultCartShopper::class);
         $container->add(CartDiscount::class, DefaultCartDiscount::class);
+        $container->add(ShippingProfileEligibility::class, new ShippingProfileEligibility(
+            new ProfileMustBeOnline,
+            new ProfileMustSupportShippingCountry,
+        ));
 
         $container->add(AdjustOrderVatSnapshot::class, new AdjustOrderVatSnapshot(
             $catalogContext->apps()->vatAllocator()
