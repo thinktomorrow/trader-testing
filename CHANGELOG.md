@@ -4,6 +4,7 @@ Important changes will be notified in this file
 
 ## unreleased
 
+- Fixed: Laravel Pint is now a flexible development dependency and no longer constrains consuming applications.
 - Added: `TaxonHierarchy` access and shipping profile eligibility wiring for Trader 0.9.7.
 
 ## 2026-04-14 - 0.1.0
